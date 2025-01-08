@@ -455,6 +455,44 @@ async def test_start(dut):
         await send_instr(dut, InstructionADDI(x0, x0, 0).encode())
     assert (dut.uo_out.value & gpio_sel) == (gpio_out & gpio_sel)
 
+  # Ensure uo_out is normally high
+  await send_instr(dut, InstructionADDI(x1, x0, 0x80).encode())
+  await send_instr(dut, InstructionSW(tp, x1, 0x0).encode())
+
+  # PWM
+  for i in range(10):
+    level = random.randint(0, 255)
+    sel = random.randint(0, 3)
+    await send_instr(dut, InstructionADDI(x1, x0, (sel << 8) | 0x80).encode())
+    await send_instr(dut, InstructionSW(tp, x1, 0x0C).encode())
+    await send_instr(dut, InstructionADDI(x1, x0, level).encode())
+    await send_instr(dut, InstructionSW(tp, x1, 0x28).encode())
+    start_nops(dut)
+    await ClockCycles(dut.clk, 24)
+
+    count = 0
+    for i in range(255):
+      value = 0
+      if sel & 1:
+        value = dut.uo_out.value >> 7
+        if sel & 2:
+          assert (dut.uio_out.value >> 7) == value
+      else:
+        assert (dut.uo_out.value >> 7) == 1
+        if sel & 2:
+          value = dut.uio_out.value >> 7
+      
+      if (sel & 2) == 0:
+        assert (dut.uio_out.value >> 7) == 1
+      
+      count += value
+      await ClockCycles(dut.clk, 1)
+
+    if sel == 0: level = 0
+    assert count == level
+
+    await stop_nops()
+
 @cocotb.test()
 async def test_debug_reg(dut):
   dut._log.info("Start")

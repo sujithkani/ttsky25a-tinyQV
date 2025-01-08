@@ -27,6 +27,7 @@ module tt_um_MichaelBell_tinyQV (
     localparam PERI_DEBUG_UART_STATUS = 4'h7;
     localparam PERI_SPI = 4'h8;
     localparam PERI_SPI_STATUS = 4'h9;
+    localparam PERI_PWM = 4'hA;
     localparam PERI_DEBUG = 4'hC;
 
     // Register the reset on the negative edge of clock for safety.
@@ -44,7 +45,8 @@ module tt_um_MichaelBell_tinyQV (
     wire       qspi_flash_select;
     wire       qspi_ram_a_select;
     wire       qspi_ram_b_select;
-    assign uio_out = {qspi_ram_b_select, qspi_ram_a_select, qspi_data_out[3:2], 
+    wire       uio_out7;
+    assign uio_out = {uio_out7, qspi_ram_a_select, qspi_data_out[3:2], 
                       qspi_clk_out, qspi_data_out[1:0], qspi_flash_select};
     assign uio_oe = rst_n ? {2'b11, qspi_data_oe[3:2], 1'b1, qspi_data_oe[1:0], 1'b1} : 8'h00;
 
@@ -85,7 +87,7 @@ module tt_um_MichaelBell_tinyQV (
     wire       uart_rts;
     wire       debug_uart_txd;
     wire       debug_signal;
-    reg  [7:0] gpio_out_sel;
+    reg  [9:0] gpio_out_sel;
     reg  [7:0] gpio_out;
 
     // All transactions to peripherals complete immediately
@@ -110,6 +112,9 @@ module tt_um_MichaelBell_tinyQV (
     wire spi_start = write_n != 2'b11 && connect_peripheral == PERI_SPI;
     wire [7:0] spi_data;
     wire spi_busy;
+
+    // PWM
+    wire pwm_out;
 
     // Interrupt requests
     reg [1:0] ui_in_reg;
@@ -169,7 +174,9 @@ module tt_um_MichaelBell_tinyQV (
     assign uo_out[5] = gpio_out_sel[5] ? gpio_out[5] : 
                        debug_register_data ? debug_rd_r[3] : spi_sck;
     assign uo_out[6] = gpio_out_sel[6] ? gpio_out[6] : debug_uart_txd;
-    assign uo_out[7] = gpio_out_sel[7] ? gpio_out[7] : debug_signal;
+    assign uo_out[7] = gpio_out_sel[8] ? pwm_out :
+                       gpio_out_sel[7] ? gpio_out[7] : debug_signal;
+    assign uio_out7 = gpio_out_sel[9] ? pwm_out : qspi_ram_b_select;
 
     always @(*) begin
         if ({addr[27:6], addr[1:0]} == 24'h800000) 
@@ -183,7 +190,7 @@ module tt_um_MichaelBell_tinyQV (
         case (connect_peripheral)
             PERI_GPIO_OUT:    data_from_read = {24'h0, uo_out};
             PERI_GPIO_IN:     data_from_read = {24'h0, ui_in};
-            PERI_GPIO_OUT_SEL:data_from_read = {24'h0, gpio_out_sel};
+            PERI_GPIO_OUT_SEL:data_from_read = {22'h0, gpio_out_sel};
             PERI_UART:        data_from_read = {24'h0, uart_rx_data};
             PERI_UART_STATUS: data_from_read = {30'h0, uart_rx_valid, uart_tx_busy};
             PERI_DEBUG_UART_STATUS: data_from_read = {31'h0, debug_uart_tx_busy};
@@ -201,7 +208,7 @@ module tt_um_MichaelBell_tinyQV (
         end
         if (write_n != 2'b11) begin
             if (connect_peripheral == PERI_GPIO_OUT) gpio_out <= data_to_write[7:0];
-            if (connect_peripheral == PERI_GPIO_OUT_SEL) gpio_out_sel <= data_to_write[7:0];
+            if (connect_peripheral == PERI_GPIO_OUT_SEL) gpio_out_sel <= data_to_write[9:0];
         end
     end
 
@@ -253,6 +260,16 @@ module tt_um_MichaelBell_tinyQV (
         .set_config(connect_peripheral == PERI_SPI_STATUS && write_n != 2'b11),
         .divider_in(data_to_write[1:0]),
         .read_latency_in(data_to_write[2])
+    );
+
+    pwm_ctrl i_pwm(
+        .clk(clk),
+        .rstn(rst_reg_n),
+
+        .pwm(pwm_out),
+
+        .level(data_to_write[7:0]),
+        .set_level(connect_peripheral == PERI_PWM && write_n != 2'b11)
     );
 
     // Debug

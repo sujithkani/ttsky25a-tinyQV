@@ -31,6 +31,7 @@ The SoC includes a UART and an SPI controller.
 | 0x8000000 - 0x8000007 | GPIO  |
 | 0x8000010 - 0x800001F | UART |
 | 0x8000020 - 0x8000027 | SPI |
+| 0x8000028 - 0x800002B | PWM |
 
 ### GPIO
 
@@ -39,7 +40,7 @@ The SoC includes a UART and an SPI controller.
 | OUT      | 0x8000000 (W) | Control out0-7, if the corresponding bit in SEL is high |
 | OUT      | 0x8000000 (R) | Reads the current state of out0-7 |
 | IN       | 0x8000004 (R) | Reads the current state of in0-7 |
-| SEL      | 0x800000C (R/W) | Enables general purpose output on the corresponding bit on out0-7 |
+| SEL      | 0x800000C (R/W) | Bits 0-7 enable general purpose output on the corresponding bit on out0-7.  Bit 8 enables PWM output on out7, bit 9 enables PWM output on io7. |
 
 ### UART
 
@@ -65,6 +66,12 @@ The SoC includes a UART and an SPI controller.
 | CONFIG   | 0x8000024 (W) | The low 2 bits set the clock divisor for the SPI clock to 2*(value + 1), bit 2 adds half a cycle to the read latency when set |
 | STATUS   | 0x8000024 (R) | Bit 0 indicates whether the SPI is busy, bytes should not be written or read from the data register while this bit is set. |
 
+### PWM
+
+| Register | Address | Description |
+| -------- | ------- | ----------- |
+| LEVEL    | 0x8000028 (W) | Set the PWM output level (0-255) |
+
 # How to test
 
 Load an image into flash and then select the design.
@@ -73,7 +80,7 @@ Reset the design as follows:
 
 * Set rst_n high and then low to ensure the design sees a falling edge of rst_n.  The bidirectional IOs are all set to inputs while rst_n is low.
 * Program the flash and leave flash in continuous read mode, and the PSRAMs in QPI mode
-* Drive all the QSPI CS high and set SD2:SD0 to the read latency of the QSPI flash and PSRAM in cycles.
+* Drive all the QSPI CS high and set SD1:SD0 to the read latency of the QSPI flash and PSRAM in cycles.
 * Clock at least 8 times and stop with clock high
 * Release all the QSPI lines
 * Set rst_n high

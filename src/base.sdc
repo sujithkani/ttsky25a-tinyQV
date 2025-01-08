@@ -10,10 +10,12 @@ set_input_delay 1.5 -clock [get_clocks $::env(CLOCK_PORT)] {rst_n}
 
 # Longer delays for input IOs as we expect to drive them on clock falling edge
 set bidi_delay_value [expr $::env(CLOCK_PERIOD) * 0.6]
-set_input_delay $bidi_delay_value -clock [get_clocks $::env(CLOCK_PORT)] {uio_in ui_in}
+set_input_delay -clock [get_clocks $::env(CLOCK_PORT)] -max $bidi_delay_value {uio_in ui_in}
+set_input_delay -clock [get_clocks $::env(CLOCK_PORT)] -min 0 {uio_in ui_in}
 
 # Longer output delay on bidi IOs to improve coherence
-set_output_delay $bidi_delay_value -clock [get_clocks $::env(CLOCK_PORT)] {uio_out uio_oe}
+set_output_delay -clock [get_clocks $::env(CLOCK_PORT)] -max $bidi_delay_value {uio_out uio_oe}
+set_output_delay -clock [get_clocks $::env(CLOCK_PORT)] -min 1 {uio_out uio_oe}
 
-# No delay on output 7 as this is used for deubg signals
-set_output_delay 0 -clock [get_clocks $::env(CLOCK_PORT)] {uo_out[7]}
+# Low delay on output 7 as this is (mainly) used for deubg signals
+set_output_delay 1 -clock [get_clocks $::env(CLOCK_PORT)] {uo_out[7]}
