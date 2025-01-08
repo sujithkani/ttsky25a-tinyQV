@@ -683,6 +683,32 @@ class CROp:
     def get_valid_arg2(self):
         return self.rs2
 
+class InstructionCZERO_EQZ(InstructionRType):
+    def __init__(self, rd = None, rs1 = None, rs2 = None):
+        self.rd = rd
+        self.rs1 = rs1
+        self.rs2 = rs2
+        self.op = 5
+
+    def execute(self, model):
+        pass
+
+    def encode(self):
+        return (0b0000111 << 25) | (self.rs2 << 20) | (self.rs1 << 15) | (self.op << 12) | (self.rd << 7) | 0b0110011
+
+class InstructionCZERO_NEZ(InstructionRType):
+    def __init__(self, rd = None, rs1 = None, rs2 = None):
+        self.rd = rd
+        self.rs1 = rs1
+        self.rs2 = rs2
+        self.op = 7
+
+    def execute(self, model):
+        pass
+
+    def encode(self):
+        return (0b0000111 << 25) | (self.rs2 << 20) | (self.rs1 << 15) | (self.op << 12) | (self.rd << 7) | 0b0110011
+
 ops_alu = [
     SimpleOp(InstructionADDI, lambda rs1, imm: reg[rs1] + imm, "+i"),
     SimpleOp(InstructionADD, lambda rs1, rs2: reg[rs1] + reg[rs2], "+"),
@@ -703,6 +729,8 @@ ops_alu = [
     SimpleOp(InstructionSRL, lambda rs1, rs2: (reg[rs1] & 0xFFFFFFFF) >> (reg[rs2] & 0x1F), ">>l"),
     SimpleOp(InstructionSRAI, lambda rs1, imm: reg[rs1] >> imm, ">>i"),
     SimpleOp(InstructionSRA, lambda rs1, rs2: reg[rs1] >> (reg[rs2] & 0x1F), ">>"),
+    SimpleOp(InstructionCZERO_EQZ, lambda rs1, rs2: 0 if reg[rs2] == 0 else reg[rs1], "?0"),
+    SimpleOp(InstructionCZERO_NEZ, lambda rs1, rs2: 0 if reg[rs2] != 0 else reg[rs1], "?!0"),
     CIOp(encode_cli, 1, -32, lambda rs1, imm: imm, "=i(c)"),
     CIOp(encode_caddi, 1, -32, lambda rs1, imm: reg[rs1] + imm, "+i(c)"),
     CIOp(encode_cslli, 1, 0, lambda rs1, imm: reg[rs1] << imm, "<<i(c)"),
@@ -979,6 +1007,8 @@ ops = [
     SimpleOp(InstructionSRL, lambda rs1, rs2: (reg[rs1] & 0xFFFFFFFF) >> (reg[rs2] & 0x1F), ">>l"),
     SimpleOp(InstructionSRAI, lambda rs1, imm: reg[rs1] >> imm, ">>i"),
     SimpleOp(InstructionSRA, lambda rs1, rs2: reg[rs1] >> (reg[rs2] & 0x1F), ">>"),
+    SimpleOp(InstructionCZERO_EQZ, lambda rs1, rs2: 0 if reg[rs2] == 0 else reg[rs1], "?0"),
+    SimpleOp(InstructionCZERO_NEZ, lambda rs1, rs2: 0 if reg[rs2] != 0 else reg[rs1], "?!0"),
     CIOp(encode_cli, 1, -32, lambda rs1, imm: imm, "=i(c)"),
     CIOp(encode_caddi, 1, -32, lambda rs1, imm: reg[rs1] + imm, "+i(c)"),
     CIOp(encode_cslli, 1, 0, lambda rs1, imm: reg[rs1] << imm, "<<i(c)"),
