@@ -8,14 +8,10 @@
 module tt_um_MichaelBell_tinyQV (
     input  wire [7:0] ui_in,    // Dedicated inputs
     output wire [7:0] uo_out,   // Dedicated outputs
-/*verilator lint_off UNUSEDSIGNAL*/
     input  wire [7:0] uio_in,   // IOs: Input path - only some bits used
-/*verilator lint_on UNUSEDSIGNAL*/
     output wire [7:0] uio_out,  // IOs: Output path
     output wire [7:0] uio_oe,   // IOs: Enable path (active high: 0=input, 1=output)
-/*verilator lint_off UNUSEDSIGNAL*/
     input  wire       ena,
-/*verilator lint_on UNUSEDSIGNAL*/
     input  wire       clk,
     input  wire       rst_n
 );
@@ -56,9 +52,7 @@ module tt_um_MichaelBell_tinyQV (
     wire  [1:0] write_n;
     wire  [1:0] read_n;
     wire        read_complete;
-/*verilator lint_off UNUSEDSIGNAL*/
     wire [31:0] data_to_write;  // Currently only bottom byte used.
-/*verilator lint_on UNUSEDSIGNAL*/
 
     wire        data_ready;
     reg [31:0] data_from_read;
@@ -293,5 +287,8 @@ module tt_um_MichaelBell_tinyQV (
                           debug_stop_txn};
     end
     assign debug_signal = debug_signals[ui_in[6:3]];
+
+    // List all unused inputs to prevent warnings
+    wire _unused = &{ena, uio_in[7:6], uio_in[3], uio_in[0], data_to_write[31:8], 1'b0};
 
 endmodule
