@@ -203,7 +203,7 @@ module tt_um_MichaelBell_tinyQV (
     // GPIO Out
     always @(posedge clk) begin
         if (!rst_reg_n) begin
-            gpio_out_sel <= {!ui_in[4], 7'b0000000};
+            gpio_out_sel <= {2'b00, !ui_in[4], 7'b0000000};
             gpio_out <= 0;
         end
         if (write_n != 2'b11) begin
