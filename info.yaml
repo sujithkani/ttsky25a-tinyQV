@@ -27,6 +27,7 @@ project:
     - "tinyQV/cpu/mem_ctrl.v"
     - "tinyQV/cpu/qspi_ctrl.v"
     - "tinyQV/cpu/register.v"
+    - "tinyQV/cpu/latch_reg.v"
     - "tinyQV/peri/uart/uart_tx.v"
     - "tinyQV/peri/uart/uart_rx.v"
     - "tinyQV/peri/spi/spi.v"
