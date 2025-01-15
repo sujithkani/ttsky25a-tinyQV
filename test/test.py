@@ -405,12 +405,12 @@ async def test_start(dut):
   await send_instr(dut, InstructionLW(x1, tp, 0x20).encode())
   await read_byte(dut, x1, spi_byte_in >> 8)
 
-  for divider in range(1,5):
+  for divider in range(1,16):
     spi_byte = random.randint(0, 255)
     spi_byte_in = random.randint(0, 255)
     #print(f"{spi_byte_in:02x}")
     spi_config = divider - 1
-    if divider == 1: spi_config += 4  # Use high latency for divider 1
+    if divider == 1: spi_config += 256  # Use high latency for divider 1
     await send_instr(dut, InstructionADDI(x1, x0, spi_config).encode())
     await send_instr(dut, InstructionSW(tp, x1, 0x24).encode())
     await send_instr(dut, InstructionADDI(x1, x0, spi_byte | 0x100).encode())
