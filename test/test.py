@@ -380,16 +380,16 @@ async def test_start(dut):
     if dut.spi_cs == 0:
         break
 
-  # Default divider is 2
-  divider = 2
+  # Default divider is 1
+  divider = 1
   for i in range(8):
       assert dut.spi_cs == 0
       assert dut.spi_sck == 0
       assert dut.spi_mosi.value == (1 if (spi_byte & 0x80) else 0)
+      dut.spi_miso.value = (1 if (spi_byte_in & 0x80) else 0)
       await ClockCycles(dut.clk, divider)
       assert dut.spi_cs == 0
       assert dut.spi_sck == 1
-      dut.spi_miso.value = (1 if (spi_byte_in & 0x80) else 0)
       assert dut.spi_mosi.value == (1 if (spi_byte & 0x80) else 0)
       await ClockCycles(dut.clk, divider)
       spi_byte <<= 1
