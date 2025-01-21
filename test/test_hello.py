@@ -78,6 +78,5 @@ async def test_hello(dut):
         run_time = int(cocotb.utils.get_sim_time("ns") - start_time)
         dut._log.info(f"Took {run_time}ns at latency {latency}")
 
-        if latency == 1 or latency == 5:
-            s = await read_string(dut)
-            dut._log.info(f"Received: {s}")
+        s = await read_string(dut)
+        dut._log.info(f"Received: {s}")

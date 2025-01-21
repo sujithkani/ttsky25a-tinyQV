@@ -40,13 +40,18 @@ module tb_qspi ();
   wire uart_rx = ui_in_base[7];
   assign ui_in = {uart_rx, ui_in_base[6:3], spi_miso, ui_in_base[1:0]};
 
+`ifdef GL_TEST
+  wire VPWR = 1'b1;
+  wire VGND = 1'b0;
+`endif
+
   // Replace tt_um_example with your module name:
   tt_um_MichaelBell_tinyQV user_project (
 
       // Include power ports for the Gate Level test:
-`ifdef USE_POWER_PINS
-      .VPWR(1'b1),
-      .VGND(1'b0),
+`ifdef GL_TEST
+      .VPWR(VPWR),
+      .VGND(VGND),
 `endif
 
       .ui_in  (ui_in),    // Dedicated inputs
