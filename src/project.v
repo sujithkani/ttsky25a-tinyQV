@@ -29,6 +29,8 @@ module tt_um_MichaelBell_tinyQV (
     localparam PERI_SPI_STATUS = 4'h9;
     localparam PERI_PWM = 4'hA;
     localparam PERI_DEBUG = 4'hC;
+    localparam PERI_MTIME = 4'hD;
+    localparam PERI_MTIMECMP = 4'hE;
 
     // Register the reset on the negative edge of clock for safety.
     // This also allows the option of async reset in the design, which might be preferable in some cases
@@ -54,7 +56,7 @@ module tt_um_MichaelBell_tinyQV (
     wire  [1:0] write_n;
     wire  [1:0] read_n;
     wire        read_complete;
-    wire [31:0] data_to_write;  // Currently only bottom byte used.
+    wire [31:0] data_to_write;
 
     wire        data_ready;
     reg [31:0] data_from_read;
@@ -116,6 +118,12 @@ module tt_um_MichaelBell_tinyQV (
     // PWM
     wire pwm_out;
 
+    // MTIME
+    reg [2:0] mhz_clk_sync;
+    reg time_pulse;
+    wire [31:0] mtime_data;
+    wire timer_interrupt;
+
     // Interrupt requests
     reg [1:0] ui_in_reg;
     always @(posedge clk) begin
@@ -137,6 +145,7 @@ module tt_um_MichaelBell_tinyQV (
         .data_in(data_from_read),
 
         .interrupt_req(interrupt_req),
+        .timer_interrupt(timer_interrupt),
 
         .spi_data_in(qspi_data_in),
         .spi_data_out(qspi_data_out),
@@ -196,6 +205,8 @@ module tt_um_MichaelBell_tinyQV (
             PERI_DEBUG_UART_STATUS: data_from_read = {31'h0, debug_uart_tx_busy};
             PERI_SPI:         data_from_read = {24'h0, spi_data};
             PERI_SPI_STATUS:  data_from_read = {31'h0, spi_busy};
+            PERI_MTIME:       data_from_read = mtime_data;
+            PERI_MTIMECMP:    data_from_read = mtime_data;
             default:          data_from_read = 32'hFFFF_FFFF;
         endcase
     end
@@ -271,6 +282,31 @@ module tt_um_MichaelBell_tinyQV (
         .level(data_to_write[7:0]),
         .set_level(connect_peripheral == PERI_PWM && write_n != 2'b11)
     );
+
+    tinyQV_time i_time(
+        .clk(clk),
+        .rstn(rst_reg_n),
+
+        .time_pulse(time_pulse),
+
+        .set_mtime(connect_peripheral == PERI_MTIME && write_n == 2'b10),
+        .set_mtimecmp(connect_peripheral == PERI_MTIMECMP && write_n == 2'b10),
+        .data_in(data_to_write),
+
+        .read_mtimecmp(connect_peripheral == PERI_MTIMECMP),
+        .data_out(mtime_data),
+
+        .timer_interrupt(timer_interrupt)
+    );
+    always @(posedge clk) begin
+        if (!rst_reg_n) begin
+            time_pulse <= 0;
+            mhz_clk_sync <= 0;
+        end else begin
+            time_pulse <= mhz_clk_sync[1] && !mhz_clk_sync[2];
+            mhz_clk_sync <= {mhz_clk_sync[1:0], ui_in[3]};
+        end
+    end
 
     // Debug
     always @(posedge clk) begin

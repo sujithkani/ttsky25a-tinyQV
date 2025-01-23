@@ -28,17 +28,18 @@ module tb ();
   wire qspi_ram_b_select = uio_out[7];
 
   wire spi_miso = ui_in_base[2];
-  assign ui_in[2] = spi_miso;
   wire spi_cs = uo_out[4];
   wire spi_sck = uo_out[5];
   wire spi_mosi = uo_out[3];
   wire spi_dc = uo_out[2];
 
+  wire mhz_clk = ui_in_base[3];
+
   wire uart_tx = uo_out[0];
   wire uart_rts = uo_out[1];
   wire debug_uart_tx = uo_out[6];
   wire uart_rx = ui_in_base[7];
-  assign ui_in = {uart_rx, ui_in_base[6:3], spi_miso, ui_in_base[1:0]};
+  assign ui_in = {uart_rx, ui_in_base[6:4], mhz_clk, spi_miso, ui_in_base[1:0]};
 
 `ifdef GL_TEST
   wire VPWR = 1'b1;

@@ -6,17 +6,12 @@ import random
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, Timer
+from cocotb.utils import get_sim_time
 
-# This hack because it isn't easy to install requirements in the TT GitHub actions
-try:
-    from riscvmodel.insn import *
-except ImportError:
-    import sys
-    import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "riscv-model"])
-    from riscvmodel.insn import *
+from riscvmodel.insn import *
 
 from riscvmodel.regnames import x0, x1, sp, gp, tp, a0, a1, a2, a3
+from riscvmodel import csrnames
 from riscvmodel.variant import RV32E
 
 from test_util import reset
@@ -492,6 +487,57 @@ async def test_start(dut):
     assert count == level
 
     await stop_nops()
+
+@cocotb.test()
+async def test_timer(dut):
+    dut._log.info("Start")
+
+    clock = Clock(dut.clk, 15.624, units="ns")
+    cocotb.start_soon(clock.start())
+
+    mhz_clock = Clock(dut.mhz_clk, 1000, units="ns")
+    cocotb.start_soon(mhz_clock.start())
+
+    # Reset
+    await reset(dut)
+    start_time = get_sim_time("ns")
+
+    # Should start reading flash after 1 cycle
+    await ClockCycles(dut.clk, 1)
+    await start_read(dut, 0)
+
+    # Read time
+    await send_instr(dut, InstructionLW(x1, tp, 0x34).encode())
+    assert await read_reg(dut, x1) <= 1
+
+    start_nops(dut)
+    await Timer(5, "us")
+    await stop_nops()
+
+    # Read time
+    await send_instr(dut, InstructionLW(x1, tp, 0x34).encode())
+    assert 6 <= await read_reg(dut, x1) <= 8
+
+    # Set timecmp
+    await send_instr(dut, InstructionADDI(x1, x0, 20).encode())
+    await send_instr(dut, InstructionSW(tp, x1, 0x38).encode())
+
+    # And read back
+    await send_instr(dut, InstructionLW(a0, tp, 0x38).encode())
+    assert await read_reg(dut, a0) == 20
+
+    # Enable timer interrupt
+    await send_instr(dut, InstructionADDI(x1, x0, 0x80).encode())
+    await send_instr(dut, InstructionCSRRW(x0, x1, csrnames.mie).encode())
+
+    while dut.qspi_flash_select.value == 0:
+        cur_time = get_sim_time("ns") - start_time
+        await send_instr(dut, InstructionADDI(x0, x0, 0).encode(), cur_time > 19800)
+
+    await ClockCycles(dut.clk, 2)
+    await start_read(dut, 8)
+    await send_instr(dut, InstructionCSRRS(a0, x0, csrnames.mcause).encode())
+    assert await read_reg(dut, a0) == 0x80000007
 
 @cocotb.test()
 async def test_debug_reg(dut):
