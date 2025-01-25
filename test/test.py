@@ -5,7 +5,7 @@ import random
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles, Timer
+from cocotb.triggers import ClockCycles, Timer, FallingEdge
 from cocotb.utils import get_sim_time
 
 from riscvmodel.insn import *
@@ -498,6 +498,8 @@ async def test_timer(dut):
     mhz_clock = Clock(dut.mhz_clk, 1000, units="ns")
     cocotb.start_soon(mhz_clock.start())
 
+    await FallingEdge(dut.mhz_clk)
+
     # Reset
     await reset(dut)
     start_time = get_sim_time("ns")
@@ -532,7 +534,8 @@ async def test_timer(dut):
 
     while dut.qspi_flash_select.value == 0:
         cur_time = get_sim_time("ns") - start_time
-        await send_instr(dut, InstructionADDI(x0, x0, 0).encode(), cur_time > 19800)
+        await send_instr(dut, InstructionADDI(x0, x0, 0).encode(), cur_time > 19300)
+        assert cur_time <= 20500
 
     await ClockCycles(dut.clk, 2)
     await start_read(dut, 8)
