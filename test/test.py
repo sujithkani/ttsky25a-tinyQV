@@ -595,7 +595,7 @@ async def test_debug_reg(dut):
   cocotb.start_soon(clock.start())
 
   # Reset
-  await reset(dut, 1, 0x18)
+  await reset(dut, 1, 0x3)
   
   # Should start reading flash after 1 cycle
   await ClockCycles(dut.clk, 1)

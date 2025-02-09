@@ -2,7 +2,7 @@
 
 In order to help debug the internals of TinyQV, various signals can be exposed on out7.  in3-in6 are used to select the signal that it output.
 
-If in4 is held high on reset, then this debug on out7 is enabled, otherwise out7 defaults to a general purpose output.  The debug mode can be selected by clearing the GP out sel bit in the register at 0x800_000C
+If in0 is held high on reset, then this debug on out7 is enabled, otherwise out7 defaults to a general purpose output.  The debug mode can be selected by clearing the GP out sel bit in the register at 0x800_000C
 
 | in3-in6 | Signal |
 | ------- | ------ |
@@ -25,6 +25,6 @@ If in4 is held high on reset, then this debug on out7 is enabled, otherwise out7
 
 ## Register value debug
 
-When in3 is held high on leaving reset, SPI is disconnected, and instead out5 to out2 reflect the value being written to the register file.  Note this output is registered, unlike the signal debug above, so appears one clock later.
+When in1 is held high on leaving reset, SPI is disconnected, and instead out5 to out2 reflect the value being written to the register file.  Note this output is registered, unlike the signal debug above, so appears one clock later.
 
 This mode can also be enabled or disabled by writing the low bit of 0x800_0030.

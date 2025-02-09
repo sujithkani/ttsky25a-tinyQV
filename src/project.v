@@ -234,7 +234,7 @@ module tt_um_MichaelBell_tinyQV (
     // GPIO Out
     always @(posedge clk) begin
         if (!rst_reg_n) begin
-            gpio_out_sel <= {2'b00, !ui_in[4], 7'b0000000};
+            gpio_out_sel <= {2'b00, !ui_in[0], 7'b0000000};
             gpio_out <= 0;
         end
         if (write_n != 2'b11) begin
@@ -343,7 +343,7 @@ module tt_um_MichaelBell_tinyQV (
     // Debug
     always @(posedge clk) begin
         if (!rst_reg_n)
-            debug_register_data <= ui_in[3];
+            debug_register_data <= ui_in[1];
         else if (connect_peripheral == PERI_DEBUG)
             debug_register_data <= data_to_write[0];
     end
@@ -374,6 +374,6 @@ module tt_um_MichaelBell_tinyQV (
     assign debug_signal = debug_signals[ui_in[6:3]];
 
     // List all unused inputs to prevent warnings
-    wire _unused = &{ena, uio_in[7:6], uio_in[3], uio_in[0], data_to_write[31:8], 1'b0};
+    wire _unused = &{ena, uio_in[7:6], uio_in[3], uio_in[0], 1'b0};
 
 endmodule
