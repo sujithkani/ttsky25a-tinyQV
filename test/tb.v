@@ -34,12 +34,15 @@ module tb ();
   wire spi_dc = uo_out[2];
 
   wire mhz_clk = ui_in_base[3];
+  wire game_latch = ui_in_base[4];
+  wire game_clk = ui_in_base[5];
+  wire game_data = ui_in_base[6];
 
   wire uart_tx = uo_out[0];
   wire uart_rts = uo_out[1];
   wire debug_uart_tx = uo_out[6];
   wire uart_rx = ui_in_base[7];
-  assign ui_in = {uart_rx, ui_in_base[6:4], mhz_clk, spi_miso, ui_in_base[1:0]};
+  assign ui_in = {uart_rx, game_data, game_clk, game_latch, mhz_clk, spi_miso, ui_in_base[1:0]};
 
 `ifdef GL_TEST
   wire VPWR = 1'b1;

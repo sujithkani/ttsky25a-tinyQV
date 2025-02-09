@@ -17,20 +17,22 @@ module tt_um_MichaelBell_tinyQV (
 );
 
     // Address to peripheral map
-    localparam PERI_NONE = 4'hF;
-    localparam PERI_GPIO_OUT = 4'h0;
-    localparam PERI_GPIO_IN = 4'h1;
-    localparam PERI_GPIO_OUT_SEL = 4'h3;
-    localparam PERI_UART = 4'h4;
-    localparam PERI_UART_STATUS = 4'h5;
-    localparam PERI_DEBUG_UART = 4'h6;
-    localparam PERI_DEBUG_UART_STATUS = 4'h7;
-    localparam PERI_SPI = 4'h8;
-    localparam PERI_SPI_STATUS = 4'h9;
-    localparam PERI_PWM = 4'hA;
-    localparam PERI_DEBUG = 4'hC;
-    localparam PERI_MTIME = 4'hD;
-    localparam PERI_MTIMECMP = 4'hE;
+    localparam PERI_NONE = 5'h1F;
+    localparam PERI_GPIO_OUT = 5'h0;
+    localparam PERI_GPIO_IN = 5'h1;
+    localparam PERI_GPIO_OUT_SEL = 5'h3;
+    localparam PERI_UART = 5'h4;
+    localparam PERI_UART_STATUS = 5'h5;
+    localparam PERI_DEBUG_UART = 5'h6;
+    localparam PERI_DEBUG_UART_STATUS = 5'h7;
+    localparam PERI_SPI = 5'h8;
+    localparam PERI_SPI_STATUS = 5'h9;
+    localparam PERI_PWM = 5'hA;
+    localparam PERI_DEBUG = 5'hC;
+    localparam PERI_MTIME = 5'hD;
+    localparam PERI_MTIMECMP = 5'hE;
+    localparam PERI_GAME_1 = 5'h10;
+    localparam PERI_GAME_2 = 5'h11;
 
     // Register the reset on the negative edge of clock for safety.
     // This also allows the option of async reset in the design, which might be preferable in some cases
@@ -78,8 +80,20 @@ module tt_um_MichaelBell_tinyQV (
     wire [3:0] debug_rd;
 
     // Peripheral IOs on ui_in and uo_out
-    wire       spi_miso  = ui_in[2];
-    wire       uart_rxd  = ui_in[7];
+    wire       spi_miso   = ui_in[2];
+    wire       mhz_clk_in = ui_in[3];
+    wire       game_latch = ui_in[4];
+    wire       game_data  = ui_in[6];
+    wire       uart_rxd   = ui_in[7];
+
+`ifdef SIM
+    wire       game_clk   = ui_in[5];
+`else
+    (* keep *) wire game_clk;
+/* verilator lint_off PINMISSING */    
+    (* keep_hierarchy *) sky130_fd_sc_hd__clkbuf_8 game_clk_buf(.X(game_clk), .A(ui_in[5]));
+/* verilator lint_on PINMISSING */
+`endif
 
     wire       spi_cs;
     wire       spi_sck;
@@ -94,7 +108,7 @@ module tt_um_MichaelBell_tinyQV (
 
     // All transactions to peripherals complete immediately
     assign data_ready = 1'b1;
-    reg [3:0] connect_peripheral;
+    reg [4:0] connect_peripheral;
 
     // Debug
     reg debug_register_data;
@@ -123,6 +137,10 @@ module tt_um_MichaelBell_tinyQV (
     reg time_pulse;
     wire [31:0] mtime_data;
     wire timer_interrupt;
+
+    // GAME
+    wire [11:0] controller1_data;
+    wire [11:0] controller2_data;
 
     // Interrupt requests
     reg [1:0] ui_in_reg;
@@ -188,8 +206,8 @@ module tt_um_MichaelBell_tinyQV (
     assign uio_out7 = gpio_out_sel[9] ? pwm_out : qspi_ram_b_select;
 
     always @(*) begin
-        if ({addr[27:6], addr[1:0]} == 24'h800000) 
-            connect_peripheral = addr[5:2];
+        if ({addr[27:7], addr[1:0]} == 23'h400000) 
+            connect_peripheral = addr[6:2];
         else
             connect_peripheral = PERI_NONE;
     end
@@ -207,6 +225,8 @@ module tt_um_MichaelBell_tinyQV (
             PERI_SPI_STATUS:  data_from_read = {31'h0, spi_busy};
             PERI_MTIME:       data_from_read = mtime_data;
             PERI_MTIMECMP:    data_from_read = mtime_data;
+            PERI_GAME_1:      data_from_read = {20'h0,controller1_data};
+            PERI_GAME_2:      data_from_read = {20'h0,controller2_data};
             default:          data_from_read = 32'hFFFF_FFFF;
         endcase
     end
@@ -304,9 +324,21 @@ module tt_um_MichaelBell_tinyQV (
             mhz_clk_sync <= 0;
         end else begin
             time_pulse <= mhz_clk_sync[1] && !mhz_clk_sync[2];
-            mhz_clk_sync <= {mhz_clk_sync[1:0], ui_in[3]};
+            mhz_clk_sync <= {mhz_clk_sync[1:0], mhz_clk_in};
         end
     end
+
+    tt_game i_game (
+        .clk(clk),
+        .rstn(rst_reg_n),
+
+        .game_latch(game_latch),
+        .game_clk(game_clk),
+        .game_data(game_data),
+
+        .controller_1(controller1_data),
+        .controller_2(controller2_data)
+    );
 
     // Debug
     always @(posedge clk) begin

@@ -129,7 +129,7 @@
     "PDK_ROOT": "/home/mdb36/tt/pdk/volare/sky130/versions/0fe599b2afb6708d281543108caf8310912f54af",
     "DESIGN_NAME": "tt_um_MichaelBell_tinyQV",
     "PDK": "sky130A",
-    "CLOCK_PERIOD": 14,
+    "CLOCK_PERIOD": 12.5,
     "CLOCK_PORT": "clk",
     "CLOCK_NET": null,
     "VDD_NETS": null,
@@ -186,7 +186,8 @@
         "/home/mdb36/tt/tt10-tinyQV/src/tinyQV/peri/uart/uart_tx.v",
         "/home/mdb36/tt/tt10-tinyQV/src/tinyQV/peri/uart/uart_rx.v",
         "/home/mdb36/tt/tt10-tinyQV/src/tinyQV/peri/spi/spi.v",
-        "/home/mdb36/tt/tt10-tinyQV/src/tinyQV/peri/pwm/pwm.v"
+        "/home/mdb36/tt/tt10-tinyQV/src/tinyQV/peri/pwm/pwm.v",
+        "/home/mdb36/tt/tt10-tinyQV/src/tinyQV/peri/ttgame/ttgame.v"
     ],
     "VERILOG_POWER_DEFINE": "USE_POWER_PINS",
     "LINTER_INCLUDE_PDK_MODELS": true,

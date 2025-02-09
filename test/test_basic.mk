@@ -6,7 +6,7 @@ SIM ?= icarus
 WAVES ?= 1
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = project.v tinyQV/cpu/*.v tinyQV/peri/uart/*.v tinyQV/peri/spi/*.v tinyQV/peri/pwm/*.v
+PROJECT_SOURCES = project.v tinyQV/cpu/*.v tinyQV/peri/uart/*.v tinyQV/peri/spi/*.v tinyQV/peri/pwm/*.v tinyQV/peri/ttgame/*.v
 
 ifneq ($(GATES),yes)
 

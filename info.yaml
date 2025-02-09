@@ -33,6 +33,7 @@ project:
     - "tinyQV/peri/uart/uart_rx.v"
     - "tinyQV/peri/spi/spi.v"
     - "tinyQV/peri/pwm/pwm.v"
+    - "tinyQV/peri/ttgame/ttgame.v"
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 pinout:

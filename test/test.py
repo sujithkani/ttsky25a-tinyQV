@@ -543,6 +543,51 @@ async def test_timer(dut):
     assert await read_reg(dut, a0) == 0x80000007
 
 @cocotb.test()
+async def test_game(dut):
+    dut._log.info("Start")
+    
+    clock = Clock(dut.clk, 15.624, units="ns")
+    cocotb.start_soon(clock.start())
+
+    # Reset
+    await reset(dut)
+    
+    # Should start reading flash after 1 cycle
+    await ClockCycles(dut.clk, 1)
+    await start_read(dut, 0)
+  
+    # Read controller state
+    await send_instr(dut, InstructionLW(x1, tp, 0x40).encode())
+    assert await read_reg(dut, x1) == 0xFFF
+    await send_instr(dut, InstructionLW(x1, tp, 0x44).encode())
+    assert await read_reg(dut, x1) == 0xFFF
+
+    for i in range(10):
+        start_nops(dut)
+
+        game_word = random.randint(0, 0xffffff)
+        val = game_word
+        for _ in range(24):
+            dut.game_data.value = (1 if val & 0x800000 else 0)
+            await Timer(5, "us")
+            dut.game_clk.value = 1
+            await Timer(5, "us")
+            dut.game_clk.value = 0
+            val <<= 1
+        
+        await Timer(5, "us")
+        dut.game_latch.value = 1
+        await Timer(5, "us")
+        dut.game_latch.value = 0
+        await stop_nops()
+
+        await send_instr(dut, InstructionLW(x1, tp, 0x40).encode())
+        assert await read_reg(dut, x1) == (game_word & 0xFFF)
+        await send_instr(dut, InstructionLW(x1, tp, 0x44).encode())
+        assert await read_reg(dut, x1) == (game_word >> 12)
+
+
+@cocotb.test()
 async def test_debug_reg(dut):
   dut._log.info("Start")
   
