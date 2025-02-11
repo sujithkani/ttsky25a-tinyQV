@@ -172,6 +172,7 @@
     "RUN_LINTER": true,
     "VERILOG_FILES": [
         "/home/mdb36/tt/tt10-tinyQV/src/project.v",
+        "/home/mdb36/tt/tt10-tinyQV/src/latch_mem.v",
         "/home/mdb36/tt/tt10-tinyQV/src/tinyQV/cpu/tinyqv.v",
         "/home/mdb36/tt/tt10-tinyQV/src/tinyQV/cpu/alu.v",
         "/home/mdb36/tt/tt10-tinyQV/src/tinyQV/cpu/core.v",
@@ -336,7 +337,7 @@
     "DESIGN_REPAIR_TIE_FANOUT": true,
     "DESIGN_REPAIR_TIE_SEPARATION": false,
     "DESIGN_REPAIR_MAX_WIRE_LENGTH": 0,
-    "DESIGN_REPAIR_MAX_SLEW_PCT": 20,
+    "DESIGN_REPAIR_MAX_SLEW_PCT": 25,
     "DESIGN_REPAIR_MAX_CAP_PCT": 20,
     "DESIGN_REPAIR_REMOVE_BUFFERS": true,
     "MANUAL_GLOBAL_PLACEMENTS": null,

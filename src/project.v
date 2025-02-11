@@ -106,9 +106,17 @@ module tt_um_MichaelBell_tinyQV (
     reg  [9:0] gpio_out_sel;
     reg  [7:0] gpio_out;
 
-    // All transactions to peripherals complete immediately
-    assign data_ready = 1'b1;
+    wire       lmem_data_ready;
+    wire [1:0] lmem_write_n;
+    wire [1:0] lmem_read_n;
+    wire [31:0] lmem_data_from_read;
+
     reg [4:0] connect_peripheral;
+
+    // All transactions to peripherals complete immediately
+    assign data_ready = addr[26] ? lmem_data_ready : 1'b1;
+    assign lmem_write_n = addr[26] ? write_n : 2'b11;
+    assign lmem_read_n = addr[26] ? read_n : 2'b11;
 
     // Debug
     reg debug_register_data;
@@ -214,21 +222,24 @@ module tt_um_MichaelBell_tinyQV (
 
     // Read data
     always @(*) begin
-        case (connect_peripheral)
-            PERI_GPIO_OUT:    data_from_read = {24'h0, uo_out};
-            PERI_GPIO_IN:     data_from_read = {24'h0, ui_in};
-            PERI_GPIO_OUT_SEL:data_from_read = {22'h0, gpio_out_sel};
-            PERI_UART:        data_from_read = {24'h0, uart_rx_data};
-            PERI_UART_STATUS: data_from_read = {30'h0, uart_rx_valid, uart_tx_busy};
-            PERI_DEBUG_UART_STATUS: data_from_read = {31'h0, debug_uart_tx_busy};
-            PERI_SPI:         data_from_read = {24'h0, spi_data};
-            PERI_SPI_STATUS:  data_from_read = {31'h0, spi_busy};
-            PERI_MTIME:       data_from_read = mtime_data;
-            PERI_MTIMECMP:    data_from_read = mtime_data;
-            PERI_GAME_1:      data_from_read = {20'h0,controller1_data};
-            PERI_GAME_2:      data_from_read = {20'h0,controller2_data};
-            default:          data_from_read = 32'hFFFF_FFFF;
-        endcase
+        if (addr[26]) data_from_read = lmem_data_from_read;
+        else begin
+            case (connect_peripheral)
+                PERI_GPIO_OUT:    data_from_read = {24'h0, uo_out};
+                PERI_GPIO_IN:     data_from_read = {24'h0, ui_in};
+                PERI_GPIO_OUT_SEL:data_from_read = {22'h0, gpio_out_sel};
+                PERI_UART:        data_from_read = {24'h0, uart_rx_data};
+                PERI_UART_STATUS: data_from_read = {30'h0, uart_rx_valid, uart_tx_busy};
+                PERI_DEBUG_UART_STATUS: data_from_read = {31'h0, debug_uart_tx_busy};
+                PERI_SPI:         data_from_read = {24'h0, spi_data};
+                PERI_SPI_STATUS:  data_from_read = {31'h0, spi_busy};
+                PERI_MTIME:       data_from_read = mtime_data;
+                PERI_MTIMECMP:    data_from_read = mtime_data;
+                PERI_GAME_1:      data_from_read = {20'h0,controller1_data};
+                PERI_GAME_2:      data_from_read = {20'h0,controller2_data};
+                default:          data_from_read = 32'hFFFF_FFFF;
+            endcase
+        end
     end
 
     // GPIO Out
@@ -338,6 +349,21 @@ module tt_um_MichaelBell_tinyQV (
 
         .controller_1(controller1_data),
         .controller_2(controller2_data)
+    );
+
+    // RAM
+    latch_mem i_latch_mem (
+        .clk(clk),
+        .rstn(rst_reg_n),
+
+        .addr_in(addr[4:0]),
+        .data_in(data_to_write),
+
+        .data_write_n(lmem_write_n),
+        .data_read_n(lmem_read_n),
+
+        .data_out(lmem_data_from_read),
+        .data_ready(lmem_data_ready)
     );
 
     // Debug
