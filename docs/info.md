@@ -28,6 +28,7 @@ The SoC includes a UART and an SPI controller.
 | 0x0000000 - 0x0FFFFFF | Flash |
 | 0x1000000 - 0x17FFFFF | RAM A |
 | 0x1800000 - 0x1FFFFFF | RAM B |
+| 0x7FFFF00 - 0x7FFFFFF | Internal RAM (32 bytes, wrapped) |
 | 0x8000000 - 0x8000007 | GPIO  |
 | 0x8000010 - 0x800001F | UART |
 | 0x8000020 - 0x8000027 | SPI |
