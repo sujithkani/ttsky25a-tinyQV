@@ -41,8 +41,8 @@ module tinyQV_peripherals (
     reg         data_out_hold;
     reg         data_ready_r;
 
-    reg         last_read_req;
-    wire        read_req = data_read_n != 2'b11;
+    reg         last_txn_req;
+    wire        txn_req = (data_read_n != 2'b11 || data_write_n != 2'b11);
 
     // Muxed data out direct from selected peripheral
     reg [31:0] data_from_peri;
@@ -64,19 +64,19 @@ module tinyQV_peripherals (
     always @(posedge clk) begin
         if (!rst_n) begin
             data_out_hold <= 0;
-            last_read_req <= 0;
+            last_txn_req <= 0;
         end else begin
             if (data_read_complete) data_out_hold <= 0;
 
-            if (!data_out_hold && data_ready_from_peri) begin
+            if (!data_out_hold && data_ready_from_peri && data_read_n != 2'b11) begin
                 data_out_hold <= 1;
                 data_out_r <= data_from_peri;
             end
 
-            last_read_req <= read_req;
+            last_txn_req <= txn_req;
 
             // Data ready must be registered because data_out is.
-            data_ready_r <= (last_read_req && read_req && data_ready_from_peri);
+            data_ready_r <= (last_txn_req && txn_req && data_ready_from_peri);
         end
     end
 
@@ -96,18 +96,15 @@ module tinyQV_peripherals (
     always @(*) begin
         peri_user = 0;
         peri_simple = 0;
-        uo_out_comb = 0;
 
         if (addr_in[10]) begin
             peri_simple[addr_in[7:4]] = 1;
             data_from_peri = {24'h0, data_from_simple_peri[addr_in[7:4]]};
             data_ready_from_peri = 1;
-            uo_out_comb = uo_out_from_simple_peri[addr_in[7:4]];
         end else begin
             peri_user[addr_in[9:6]] = 1;
             data_from_peri = data_from_user_peri[addr_in[9:6]];
             data_ready_from_peri = data_ready_from_user_peri[addr_in[9:6]];
-            uo_out_comb = uo_out_from_user_peri[addr_in[9:6]];
         end
     end
 
@@ -118,7 +115,7 @@ module tinyQV_peripherals (
     // --------------------------------------------------------------------- //
     // GPIO
 
-    reg [31:0] gpio_out_func_sel [0:7];
+    reg [4:0] gpio_out_func_sel [0:7];
     reg [7:0] gpio_out;
     reg [7:0] ui_in_sync0;
     reg [7:0] ui_in_sync;
@@ -141,7 +138,7 @@ module tinyQV_peripherals (
 
     assign data_from_user_peri[PERI_GPIO] = (addr_in[5:0] == 6'h0) ? {24'h0, gpio_out} :
                                             (addr_in[5:0] == 6'h4) ? {24'h0, ui_in}    :
-                                            ({addr_in[5], addr_in[1:0]} == 3'b100) ? gpio_out_func_sel[addr_in[4:2]] :
+                                            ({addr_in[5], addr_in[1:0]} == 3'b100) ? {27'h0, gpio_out_func_sel[addr_in[4:2]]} :
                                             32'h0;
     assign data_ready_from_user_peri[PERI_GPIO] = 1;
     assign uo_out_from_user_peri[PERI_GPIO] = gpio_out;
@@ -151,13 +148,24 @@ module tinyQV_peripherals (
         for (i = 0; i < 8; i = i + 1) begin
             always @(posedge clk) begin
                 if (!rst_n) begin
-                    gpio_out_func_sel[i] <= 0;
+                    gpio_out_func_sel[i] <= (i == 0) ? PERI_UART_TX : 
+                                            (i == 1) ? PERI_UART_RX : PERI_GPIO;
                 end else if (peri_user[PERI_GPIO]) begin
-                    if (data_write_n != 2'b11)              gpio_out_func_sel[i][7:0]   <= data_in[7:0];
-                    if (data_write_n[1] != data_write_n[0]) gpio_out_func_sel[i][15:8]  <= data_in[15:8];
-                    if (data_write_n == 2'b10)              gpio_out_func_sel[i][31:16] <= data_in[31:16];
+                    if ({addr_in[5], addr_in[1:0]} == 3'b100 && addr_in[4:2] == i) begin
+                        if (data_write_n != 2'b11) gpio_out_func_sel[i] <= data_in[4:0];
+                    end
                 end
             end
+
+            always @(*) begin
+                uo_out_comb[i] = 0;
+
+                if (gpio_out_func_sel[i][4]) begin
+                    uo_out_comb[i] = uo_out_from_simple_peri[gpio_out_func_sel[i][3:0]][i];
+                end else begin
+                    uo_out_comb[i] = uo_out_from_user_peri[gpio_out_func_sel[i][3:0]][i];
+                end
+            end            
         end
     endgenerate
 

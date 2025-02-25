@@ -308,7 +308,7 @@ async def test_start(dut):
   # Test UART TX
   uart_byte = 0x54
   await send_instr(dut, InstructionADDI(x1, x0, uart_byte).encode())
-  await send_instr(dut, InstructionSW(tp, x1, 0x10).encode())
+  await send_instr(dut, InstructionSW(tp, x1, 0x80).encode())
 
   start_nops(dut)
   bit_time = 8680
@@ -339,12 +339,12 @@ async def test_start(dut):
 
     await stop_nops()
 
-    await send_instr(dut, InstructionLW(x1, tp, 0x14).encode())
-    await read_byte(dut, x1, 0x2)
-    await send_instr(dut, InstructionLW(x1, tp, 0x10).encode())
+    await send_instr(dut, InstructionLW(x1, tp, 0xc4).encode())
+    await read_byte(dut, x1, 0x1)
+    await send_instr(dut, InstructionLW(x1, tp, 0xc0).encode())
     await read_byte(dut, x1, uart_rx_byte)
     assert dut.uart_rts.value == 0
-    await send_instr(dut, InstructionLW(x1, tp, 0x14).encode())
+    await send_instr(dut, InstructionLW(x1, tp, 0xc4).encode())
     await read_byte(dut, x1, 0)
 
     if j != 9:
@@ -355,53 +355,12 @@ async def test_start(dut):
   await send_instr(dut, InstructionADDI(x1, x0, uart_byte).encode())
   await read_byte(dut, x1, uart_byte)
 
-  # Test SPI
-  spi_byte = 0xa5
-  spi_byte_in = random.randint(0, 255)
-  #print(f"{spi_byte_in:02x}")
-  await send_instr(dut, InstructionADDI(x1, x0, spi_byte | 0x100).encode())
-  await send_instr(dut, InstructionSW(tp, x1, 0x20).encode())
-
-  start_nops(dut)
-  assert dut.spi_cs == 1
-  for i in range(20):
-    await ClockCycles(dut.clk, 1)
-    if dut.spi_cs == 0:
-        break
-
-  # Default divider is 1
-  divider = 1
-  for i in range(8):
-      assert dut.spi_cs == 0
-      assert dut.spi_sck == 0
-      assert dut.spi_mosi.value == (1 if (spi_byte & 0x80) else 0)
-      dut.spi_miso.value = (1 if (spi_byte_in & 0x80) else 0)
-      await ClockCycles(dut.clk, divider)
-      assert dut.spi_cs == 0
-      assert dut.spi_sck == 1
-      assert dut.spi_mosi.value == (1 if (spi_byte & 0x80) else 0)
-      await ClockCycles(dut.clk, divider)
-      spi_byte <<= 1
-      spi_byte_in <<= 1
-
-  assert dut.spi_sck == 0
-  assert dut.spi_cs.value == 0
-  await ClockCycles(dut.clk, divider)
-  assert dut.spi_cs.value == 1
-
-  await stop_nops()  
-
-  await send_instr(dut, InstructionLW(x1, tp, 0x20).encode())
-  await read_byte(dut, x1, spi_byte_in >> 8)
-
-  for divider in range(1,16):
-    spi_byte = random.randint(0, 255)
+  # TODO: May bring back the default SPI as it's not huge and we know it works.
+  if False:
+    # Test SPI
+    spi_byte = 0xa5
     spi_byte_in = random.randint(0, 255)
     #print(f"{spi_byte_in:02x}")
-    spi_config = divider - 1
-    if divider == 1: spi_config += 256  # Use high latency for divider 1
-    await send_instr(dut, InstructionADDI(x1, x0, spi_config).encode())
-    await send_instr(dut, InstructionSW(tp, x1, 0x24).encode())
     await send_instr(dut, InstructionADDI(x1, x0, spi_byte | 0x100).encode())
     await send_instr(dut, InstructionSW(tp, x1, 0x20).encode())
 
@@ -412,75 +371,88 @@ async def test_start(dut):
         if dut.spi_cs == 0:
             break
 
+    # Default divider is 1
+    divider = 1
     for i in range(8):
         assert dut.spi_cs == 0
         assert dut.spi_sck == 0
         assert dut.spi_mosi.value == (1 if (spi_byte & 0x80) else 0)
+        dut.spi_miso.value = (1 if (spi_byte_in & 0x80) else 0)
         await ClockCycles(dut.clk, divider)
         assert dut.spi_cs == 0
         assert dut.spi_sck == 1
-        dut.spi_miso.value = (1 if (spi_byte_in & 0x80) else 0)
         assert dut.spi_mosi.value == (1 if (spi_byte & 0x80) else 0)
         await ClockCycles(dut.clk, divider)
         spi_byte <<= 1
         spi_byte_in <<= 1
 
+    assert dut.spi_sck == 0
+    assert dut.spi_cs.value == 0
     await ClockCycles(dut.clk, divider)
     assert dut.spi_cs.value == 1
 
     await stop_nops()  
+
     await send_instr(dut, InstructionLW(x1, tp, 0x20).encode())
     await read_byte(dut, x1, spi_byte_in >> 8)
 
+    for divider in range(1,16):
+        spi_byte = random.randint(0, 255)
+        spi_byte_in = random.randint(0, 255)
+        #print(f"{spi_byte_in:02x}")
+        spi_config = divider - 1
+        if divider == 1: spi_config += 256  # Use high latency for divider 1
+        await send_instr(dut, InstructionADDI(x1, x0, spi_config).encode())
+        await send_instr(dut, InstructionSW(tp, x1, 0x24).encode())
+        await send_instr(dut, InstructionADDI(x1, x0, spi_byte | 0x100).encode())
+        await send_instr(dut, InstructionSW(tp, x1, 0x20).encode())
+
+        start_nops(dut)
+        assert dut.spi_cs == 1
+        for i in range(20):
+            await ClockCycles(dut.clk, 1)
+            if dut.spi_cs == 0:
+                break
+
+        for i in range(8):
+            assert dut.spi_cs == 0
+            assert dut.spi_sck == 0
+            assert dut.spi_mosi.value == (1 if (spi_byte & 0x80) else 0)
+            await ClockCycles(dut.clk, divider)
+            assert dut.spi_cs == 0
+            assert dut.spi_sck == 1
+            dut.spi_miso.value = (1 if (spi_byte_in & 0x80) else 0)
+            assert dut.spi_mosi.value == (1 if (spi_byte & 0x80) else 0)
+            await ClockCycles(dut.clk, divider)
+            spi_byte <<= 1
+            spi_byte_in <<= 1
+
+        await ClockCycles(dut.clk, divider)
+        assert dut.spi_cs.value == 1
+
+        await stop_nops()  
+        await send_instr(dut, InstructionLW(x1, tp, 0x20).encode())
+        await read_byte(dut, x1, spi_byte_in >> 8)
+
   # GPIO
+  await send_instr(dut, InstructionADDI(x1, x0, 0xff).encode())
+  await send_instr(dut, InstructionSW(tp, x1, 0x0c).encode())
+
   for i in range(40):
     gpio_sel = random.randint(0, 255)
     gpio_out = random.randint(0, 255)
-    await send_instr(dut, InstructionADDI(x1, x0, gpio_sel).encode())
-    await send_instr(dut, InstructionSW(tp, x1, 0x0C).encode())
+    for j in range(8):
+        await send_instr(dut, InstructionADDI(x1, x0, (gpio_sel >> j) & 1).encode())
+        await send_instr(dut, InstructionSW(tp, x1, 0x60 + j*4).encode())
     await send_instr(dut, InstructionADDI(x1, x0, gpio_out).encode())
-    await send_instr(dut, InstructionSW(tp, x1, 0x0).encode())
+    await send_instr(dut, InstructionSW(tp, x1, 0x40).encode())
     for _ in range(3):
         await send_instr(dut, InstructionADDI(x0, x0, 0).encode())
     assert (dut.uo_out.value & gpio_sel) == (gpio_out & gpio_sel)
 
   # Ensure uo_out is normally high
   await send_instr(dut, InstructionADDI(x1, x0, 0x80).encode())
-  await send_instr(dut, InstructionSW(tp, x1, 0x0).encode())
-
-  # PWM
-  for i in range(10):
-    level = random.randint(0, 255)
-    sel = random.randint(0, 3)
-    await send_instr(dut, InstructionADDI(x1, x0, (sel << 8) | 0x80).encode())
-    await send_instr(dut, InstructionSW(tp, x1, 0x0C).encode())
-    await send_instr(dut, InstructionADDI(x1, x0, level).encode())
-    await send_instr(dut, InstructionSW(tp, x1, 0x28).encode())
-    start_nops(dut)
-    await ClockCycles(dut.clk, 24)
-
-    count = 0
-    for i in range(255):
-      value = 0
-      if sel & 1:
-        value = dut.uo_out.value >> 7
-        if sel & 2:
-          assert (dut.uio_out.value >> 7) == value
-      else:
-        assert (dut.uo_out.value >> 7) == 1
-        if sel & 2:
-          value = dut.uio_out.value >> 7
-      
-      if (sel & 2) == 0:
-        assert (dut.uio_out.value >> 7) == 1
-      
-      count += value
-      await ClockCycles(dut.clk, 1)
-
-    if sel == 0: level = 0
-    assert count == level
-
-    await stop_nops()
+  await send_instr(dut, InstructionSW(tp, x1, 0x40).encode())
 
 @cocotb.test()
 async def test_timer(dut):
