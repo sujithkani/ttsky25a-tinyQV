@@ -117,8 +117,6 @@ module tinyQV_peripherals (
 
     reg [4:0] gpio_out_func_sel [0:7];
     reg [7:0] gpio_out;
-    reg [7:0] ui_in_sync0;
-    reg [7:0] ui_in_sync;
 
     always @(posedge clk) begin
         if (!rst_n) begin
@@ -128,12 +126,6 @@ module tinyQV_peripherals (
                 if (data_write_n != 2'b11) gpio_out <= data_in[7:0];
             end
         end
-    end
-
-    // Peripherals get synchronized ui_in.
-    always @(posedge clk) begin
-        ui_in_sync0 <= ui_in;
-        ui_in_sync <= ui_in_sync0;
     end
 
     assign data_from_user_peri[PERI_GPIO] = (addr_in[5:0] == 6'h0) ? {24'h0, gpio_out} :
@@ -217,7 +209,7 @@ module tinyQV_peripherals (
         .clk(clk),
         .rst_n(rst_n),
 
-        .ui_in(ui_in_sync),
+        .ui_in(ui_in),
         .uo_out(uo_out_from_user_peri[4]),
 
         .address(addr_in[5:0]),
@@ -239,7 +231,7 @@ module tinyQV_peripherals (
                 .clk(clk),
                 .rst_n(rst_n),
 
-                .ui_in(ui_in_sync),
+                .ui_in(ui_in),
                 .uo_out(uo_out_from_user_peri[i]),
 
                 .address(addr_in[5:0]),
@@ -263,7 +255,7 @@ module tinyQV_peripherals (
         .clk(clk),
         .rst_n(rst_n),
 
-        .ui_in(ui_in_sync),
+        .ui_in(ui_in),
         .uo_out(uo_out_from_simple_peri[0]),
 
         .address(addr_in[3:0]),
@@ -281,7 +273,7 @@ module tinyQV_peripherals (
                 .clk(clk),
                 .rst_n(rst_n),
 
-                .ui_in(ui_in_sync),
+                .ui_in(ui_in),
                 .uo_out(uo_out_from_simple_peri[i]),
 
                 .address(addr_in[3:0]),

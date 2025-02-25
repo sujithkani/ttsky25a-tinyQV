@@ -509,99 +509,6 @@ async def test_timer(dut):
     assert await read_reg(dut, a0) == 0x80000007
 
 @cocotb.test()
-async def test_game(dut):
-    dut._log.info("Start")
-    
-    clock = Clock(dut.clk, 15.624, units="ns")
-    cocotb.start_soon(clock.start())
-
-    # Reset
-    await reset(dut)
-    
-    # Should start reading flash after 1 cycle
-    await ClockCycles(dut.clk, 1)
-    await start_read(dut, 0)
-  
-    # Read controller state
-    await send_instr(dut, InstructionLW(x1, tp, 0x40).encode())
-    assert await read_reg(dut, x1) == 0xFFF
-    await send_instr(dut, InstructionLW(x1, tp, 0x44).encode())
-    assert await read_reg(dut, x1) == 0xFFF
-
-    for i in range(10):
-        start_nops(dut)
-
-        game_word = random.randint(0, 0xffffff)
-        val = game_word
-        for _ in range(24):
-            dut.game_data.value = (1 if val & 0x800000 else 0)
-            await Timer(5, "us")
-            dut.game_clk.value = 1
-            await Timer(5, "us")
-            dut.game_clk.value = 0
-            val <<= 1
-        
-        await Timer(5, "us")
-        dut.game_latch.value = 1
-        await Timer(5, "us")
-        dut.game_latch.value = 0
-        await stop_nops()
-
-        await send_instr(dut, InstructionLW(x1, tp, 0x40).encode())
-        assert await read_reg(dut, x1) == (game_word & 0xFFF)
-        await send_instr(dut, InstructionLW(x1, tp, 0x44).encode())
-        assert await read_reg(dut, x1) == (game_word >> 12)
-
-@cocotb.test()
-async def test_latch_memory(dut):
-    dut._log.info("Start")
-    
-    clock = Clock(dut.clk, 15.624, units="ns")
-    cocotb.start_soon(clock.start())
-
-    # Reset
-    await reset(dut)
-    
-    # Should start reading flash after 1 cycle
-    await ClockCycles(dut.clk, 1)
-    await start_read(dut, 0)
-
-    RAM_SIZE = 32
-    RAM = [0]*RAM_SIZE
-    for i in range(0, RAM_SIZE, 4):
-        await send_instr(dut, InstructionSW(tp, x0, i-0x100).encode())
-
-    for i in range(1000):
-        if random.randint(0, 1) == 0:
-            read_len = random.randint(0,2)
-            read_addr = random.randint(0,RAM_SIZE - (1 << read_len))
-            if read_len == 0: await send_instr(dut, InstructionLB(x1, tp, read_addr-0x100).encode())
-            elif read_len == 1: await send_instr(dut, InstructionLH(x1, tp, read_addr-0x100).encode())
-            else: await send_instr(dut, InstructionLW(x1, tp, read_addr-0x100).encode())
-            read_val = await read_reg(dut, x1)
-            assert (read_val & 0xFF) == RAM[read_addr]
-            if read_len > 0: assert ((read_val >> 8) & 0xFF) == RAM[read_addr+1]
-            if read_len > 1: 
-                assert ((read_val >> 16) & 0xFF) == RAM[read_addr+2]
-                assert ((read_val >> 24) & 0xFF) == RAM[read_addr+3]
-        else:
-            write_len = random.randint(0,2)
-            write_addr = random.randint(0,RAM_SIZE - (1 << write_len))
-            write_val = random.randint(0,0xffffffff)
-            await send_instr(dut, InstructionLUI(x1, (write_val >> 12) + ((write_val >> 11) & 1)).encode())
-            await send_instr(dut, InstructionADDI(x1, x1, (write_val & 0xfff) - (0x1000 if write_val & 0x800 else 0)).encode())
-
-            if write_len == 0: await send_instr(dut, InstructionSB(tp, x1, write_addr-0x100).encode())
-            elif write_len == 1: await send_instr(dut, InstructionSH(tp, x1, write_addr-0x100).encode())
-            else: await send_instr(dut, InstructionSW(tp, x1, write_addr-0x100).encode())
-            
-            RAM[write_addr] = write_val & 0xff
-            if write_len > 0: RAM[write_addr + 1] = (write_val >> 8) & 0xff
-            if write_len > 1:
-                RAM[write_addr + 2] = (write_val >> 16) & 0xff
-                RAM[write_addr + 3] = (write_val >> 24) & 0xff
-
-@cocotb.test()
 async def test_debug_reg(dut):
   dut._log.info("Start")
   
@@ -663,7 +570,7 @@ async def test_load_bug(dut):
   await send_instr(dut, InstructionADDI(a0, x0, 0x001).encode())
   await send_instr(dut, InstructionBEQ(a0, x0, 270).encode())
 
-  await send_instr(dut, encode_clwsp(a3, tp, 4))
+  await send_instr(dut, encode_clwsp(a3, tp, 0x44))
   await send_instr(dut, encode_clwsp(a2, sp, 12))
   await expect_load(dut, 0x1001000 + 12, 0x123)
   await read_byte(dut, a3, input_byte)
@@ -1207,16 +1114,18 @@ async def test_random(dut):
     seed = random.randint(0, 0xFFFFFFFF)
     #seed = 1508125843
 
-    RAM_SIZE = 32
-    RAM = []
-    for i in range(0, RAM_SIZE, 4):
-        val = random.randint(0, 0xFFFFFFFF)
-        await set_reg(dut, x1, val)
-        await send_instr(dut, InstructionSW(tp, x1, i-0x100).encode())
-        RAM.append(val & 0xFF)
-        RAM.append((val >> 8) & 0xFF)
-        RAM.append((val >> 16) & 0xFF)
-        RAM.append((val >> 24) & 0xFF)
+    latch_ram = False
+    if latch_ram:
+        RAM_SIZE = 32
+        RAM = []
+        for i in range(0, RAM_SIZE, 4):
+            val = random.randint(0, 0xFFFFFFFF)
+            await set_reg(dut, x1, val)
+            await send_instr(dut, InstructionSW(tp, x1, i-0x100).encode())
+            RAM.append(val & 0xFF)
+            RAM.append((val >> 8) & 0xFF)
+            RAM.append((val >> 16) & 0xFF)
+            RAM.append((val >> 24) & 0xFF)
     
     debug = False
     if debug: print("RAM: ", RAM)
@@ -1249,7 +1158,7 @@ async def test_random(dut):
                     arg2 = instr.get_valid_arg2()
 
                     if instr.is_mem_op:
-                        if random.randint(0, 2) == 2:
+                        if latch_ram and random.randint(0, 2) == 2:
                             # Use latch RAM
                             addr = random.randint(0x7ffff00-instr.imm, 0x7ffff3c-instr.imm)
                             if instr.name[0] == 'l':

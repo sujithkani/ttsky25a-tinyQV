@@ -94,12 +94,16 @@ module tt_um_MichaelBell_tinyQV (
     wire        peri_data_ready;
     wire [15:2] peri_interrupts;
 
-    // Interrupt requests
-    reg [1:0] ui_in_reg;
+    // Peripherals get synchronized ui_in.
+    reg [7:0] ui_in_sync0;
+    reg [7:0] ui_in_sync;
     always @(posedge clk) begin
-        ui_in_reg <= ui_in[1:0];
+        ui_in_sync0 <= ui_in;
+        ui_in_sync <= ui_in_sync0;
     end
-    wire [15:0] interrupt_req = {peri_interrupts, ui_in_reg[1:0]};
+
+    // Interrupt requests
+    wire [15:0] interrupt_req = {peri_interrupts, ui_in_sync[1:0]};
 
     tinyQV i_tinyqv(
         .clk(clk),
@@ -155,7 +159,7 @@ module tt_um_MichaelBell_tinyQV (
         .clk(clk),
         .rst_n(rst_reg_n),
 
-        .ui_in(ui_in),
+        .ui_in(ui_in_sync),
         .uo_out(peri_out),
 
         .addr_in(addr[10:0]),
