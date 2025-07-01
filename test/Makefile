@@ -10,9 +10,8 @@ peri-%.xml:
 	MODULE=user_peripherals.$* make -f test_basic.mk
 	mv results.xml $@
 
-all: clean basic-results.xml prog-results.xml
-	#cat *results.xml peri-*.xml > results.xml
-	cat *results.xml > results.xml
+all: clean basic-results.xml peri-simple_example.xml prog-results.xml
+	cat *results.xml peri-*.xml > results.xml
 
 clean:
 	rm *results.xml peri-*.xml || true
