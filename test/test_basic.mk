@@ -6,7 +6,7 @@ SIM ?= icarus
 WAVES ?= 1
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = project.v peri*.v tinyQV/cpu/*.v tinyQV/peri/uart/*.v tinyQV/peri/spi/*.v
+PROJECT_SOURCES = project.v peri*.v tinyQV/cpu/*.v tinyQV/peri/uart/*.v tinyQV/peri/spi/*.v #user_peripherals/*.v
 
 ifneq ($(GATES),yes)
 
@@ -58,7 +58,7 @@ VERILOG_SOURCES += $(PWD)/tb.v
 TOPLEVEL = tb
 
 # MODULE is the basename of the Python test file
-MODULE = test
+MODULE ?= test
 
 # include cocotb's make rules to take care of the simulator setup
 include $(shell cocotb-config --makefiles)/Makefile.sim

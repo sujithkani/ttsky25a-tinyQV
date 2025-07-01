@@ -5,8 +5,14 @@
 	make -f test_$*.mk
 	mv results.xml $@
 
+peri-%.xml:
+	make -f test_basic.mk clean
+	MODULE=user_peripherals.$* make -f test_basic.mk
+	mv results.xml $@
+
 all: clean basic-results.xml prog-results.xml
+	#cat *results.xml peri-*.xml > results.xml
 	cat *results.xml > results.xml
 
 clean:
-	rm *results.xml || true
+	rm *results.xml peri-*.xml || true

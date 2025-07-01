@@ -41,8 +41,8 @@ module tinyQV_peripherals (
     reg         data_out_hold;
     reg         data_ready_r;
 
-    reg         last_txn_req;
-    wire        txn_req = (data_read_n != 2'b11 || data_write_n != 2'b11);
+    reg         last_read_req;
+    wire        read_req = data_read_n != 2'b11;
 
     // Muxed data out direct from selected peripheral
     reg [31:0] data_from_peri;
@@ -64,7 +64,7 @@ module tinyQV_peripherals (
     always @(posedge clk) begin
         if (!rst_n) begin
             data_out_hold <= 0;
-            last_txn_req <= 0;
+            last_read_req <= 0;
         end else begin
             if (data_read_complete) data_out_hold <= 0;
 
@@ -73,15 +73,15 @@ module tinyQV_peripherals (
                 data_out_r <= data_from_peri;
             end
 
-            last_txn_req <= txn_req;
+            last_read_req <= read_req;
 
             // Data ready must be registered because data_out is.
-            data_ready_r <= (last_txn_req && txn_req && data_ready_from_peri);
+            data_ready_r <= (last_read_req && read_req && data_ready_from_peri);
         end
     end
 
     assign data_out = data_out_r;
-    assign data_ready = data_ready_r;
+    assign data_ready = data_ready_r || data_write_n != 2'b11;
 
     // --------------------------------------------------------------------- //
     // Decode the address to select the active peripheral
@@ -224,9 +224,28 @@ module tinyQV_peripherals (
         .user_interrupt(user_interrupts[4])
     );
 
+    tqvp_example i_user_peri05 (
+        .clk(clk),
+        .rst_n(rst_n),
+
+        .ui_in(ui_in),
+        .uo_out(uo_out_from_user_peri[5]),
+
+        .address(addr_in[5:0]),
+        .data_in(data_in),
+
+        .data_write_n(data_write_n | {2{~peri_user[5]}}),
+        .data_read_n(data_read_n   | {2{~peri_user[5]}}),
+
+        .data_out(data_from_user_peri[5]),
+        .data_ready(data_ready_from_user_peri[5]),
+
+        .user_interrupt(user_interrupts[5])
+    );
+
     // Unallocated peripherals, move up to explicit entry above to add a design.
     generate
-        for (i = 5; i < 16; i = i + 1) begin
+        for (i = 6; i < 16; i = i + 1) begin
             tqvp_example i_user_peri (
                 .clk(clk),
                 .rst_n(rst_n),
@@ -266,9 +285,39 @@ module tinyQV_peripherals (
         .data_out(data_from_simple_peri[0])
     );
 
+    tqvp_simple_example i_user_simple01 (
+        .clk(clk),
+        .rst_n(rst_n),
+
+        .ui_in(ui_in),
+        .uo_out(uo_out_from_simple_peri[1]),
+
+        .address(addr_in[3:0]),
+
+        .data_write((data_write_n != 2'b11) & peri_simple[1]),
+        .data_in(data_in[7:0]),
+
+        .data_out(data_from_simple_peri[1])
+    );
+
+    tqvp_simple_example i_user_simple02 (
+        .clk(clk),
+        .rst_n(rst_n),
+
+        .ui_in(ui_in),
+        .uo_out(uo_out_from_simple_peri[2]),
+
+        .address(addr_in[3:0]),
+
+        .data_write((data_write_n != 2'b11) & peri_simple[2]),
+        .data_in(data_in[7:0]),
+
+        .data_out(data_from_simple_peri[2])
+    );
+
     // Unallocated peripherals, move up to explicit entry above to add a design.
     generate
-        for (i = 1; i < 16; i = i + 1) begin
+        for (i = 3; i < 16; i = i + 1) begin
             tqvp_simple_example i_user_simple (
                 .clk(clk),
                 .rst_n(rst_n),
