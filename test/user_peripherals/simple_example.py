@@ -40,5 +40,19 @@ async def test_project(dut):
     # Change it to match the actual expected output of your module:
     assert dut.uo_out.value == 50
 
-    # Keep testing the module by changing the input values, waiting for
-    # one or more clock cycles, and asserting the expected output values.
+    # Input value should be read back from register 1
+    assert await tqv.read_reg(1) == 30
+
+    # Zero should be read back from register 2
+    assert await tqv.read_reg(2) == 0
+
+    # Second write should work
+    await tqv.write_reg(0, 40)
+
+    # The store will take a few cycles to complete
+    for i in range(16):
+        if dut.uo_out.value == 70: break
+        await ClockCycles(dut.clk, 3)
+    else:
+        # The write should have completed by now.
+        assert dut.uo_out.value == 70
