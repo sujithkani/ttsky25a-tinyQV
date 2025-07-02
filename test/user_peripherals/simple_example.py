@@ -7,7 +7,6 @@ from cocotb.triggers import ClockCycles
 
 from tqv import TinyQV
 
-BASE_ADDRESS = 0x4F0
 PERIPHERAL_NUM = 31
 
 @cocotb.test()
@@ -18,7 +17,7 @@ async def test_project(dut):
     clock = Clock(dut.clk, 100, units="ns")
     cocotb.start_soon(clock.start())
 
-    tqv = TinyQV(dut, PERIPHERAL_NUM, BASE_ADDRESS)
+    tqv = TinyQV(dut, PERIPHERAL_NUM)
 
     # Reset
     await tqv.reset()

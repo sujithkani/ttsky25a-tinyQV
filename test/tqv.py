@@ -8,11 +8,14 @@ import test_util
 # This class provides access to the peripheral's registers.
 class TinyQV:
 
-    # The peripheral number and base address must be provided.
-    def __init__(self, dut, peripheral_num, base_address):
+    # The peripheral number must be provided.
+    def __init__(self, dut, peripheral_num):
         self.dut = dut
         self.peripheral_num = peripheral_num
-        self.base_address = base_address
+        if peripheral_num < 16:
+            self.base_address = peripheral_num * 0x40
+        else:
+            self.base_address = 0x300 + peripheral_num * 0x10
 
     # Reset the design, this reset will initialize TinyQV and connect
     # all inputs and outputs to your peripheral.
