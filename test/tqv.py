@@ -30,7 +30,7 @@ class TinyQV:
 
         test_util.start_nops(self.dut)
 
-    # Write a value to a register in your design
+    # Write a value to a byte register in your design
     # reg is the address of the register in the range 0-15
     # value is the value to be written, in the range 0-255
     # If sync is false this function will return before the store is completed.
@@ -45,12 +45,77 @@ class TinyQV:
 
         test_util.start_nops(self.dut)
 
-    # Read the value of a register from your design
+    # Read the value of a byte register from your design
     # reg is the address of the register in the range 0-15
     # The returned value is the data read from the register, in the range 0-255
     async def read_reg(self, reg):
         await test_util.stop_nops()
         await test_util.send_instr(self.dut, InstructionLBU(a1, tp, self.base_address + reg).encode())
+        val = await test_util.read_reg(self.dut, a1)
+        test_util.start_nops(self.dut)
+        return val
+
+    # Write a value to a byte register in your design
+    # reg is the address of the register in the range 0-15
+    # value is the value to be written, in the range 0-255
+    # If sync is false this function will return before the store is completed.
+    async def write_byte_reg(self, reg, value, sync=True):
+        await self.write_reg(reg, value, sync)
+
+    # Read the value of a byte register from your design
+    # reg is the address of the register in the range 0-15
+    # The returned value is the data read from the register, in the range 0-255
+    async def read_byte_reg(self, reg):
+        return await self.read_reg(reg)
+
+    # Write a value to a half word register in your design
+    # reg is the address of the register in the range 0-15
+    # value is the value to be written, in the range 0-65535
+    # If sync is false this function will return before the store is completed.
+    async def write_hword_reg(self, reg, value, sync=True):
+        await test_util.stop_nops()
+        await test_util.send_instr(self.dut, InstructionLUI(a1, value >> 12).encode())
+        await test_util.send_instr(self.dut, InstructionADDI(a1, a1, value & 0xfff).encode())
+        await test_util.send_instr(self.dut, InstructionSH(tp, a1, self.base_address + reg).encode())
+
+        if sync:
+            # Read a register in order to ensure the store is complete before returning
+            assert await test_util.read_reg(self.dut, a1) == value
+
+        test_util.start_nops(self.dut)
+
+    # Read the value of a half word register from your design
+    # reg is the address of the register in the range 0-15
+    # The returned value is the data read from the register, in the range 0-65535
+    async def read_hword_reg(self, reg):
+        await test_util.stop_nops()
+        await test_util.send_instr(self.dut, InstructionLHU(a1, tp, self.base_address + reg).encode())
+        val = await test_util.read_reg(self.dut, a1)
+        test_util.start_nops(self.dut)
+        return val
+
+    # Write a value to a word register in your design
+    # reg is the address of the register in the range 0-15
+    # value is the value to be written
+    # If sync is false this function will return before the store is completed.
+    async def write_word_reg(self, reg, value, sync=True):
+        await test_util.stop_nops()
+        await test_util.send_instr(self.dut, InstructionLUI(a1, value >> 12).encode())
+        await test_util.send_instr(self.dut, InstructionADDI(a1, a1, value & 0xfff).encode())
+        await test_util.send_instr(self.dut, InstructionSW(tp, a1, self.base_address + reg).encode())
+
+        if sync:
+            # Read a register in order to ensure the store is complete before returning
+            assert await test_util.read_reg(self.dut, a1) == value
+
+        test_util.start_nops(self.dut)
+
+    # Read the value of a word register from your design
+    # reg is the address of the register in the range 0-15
+    # The returned value is the data read from the register
+    async def read_word_reg(self, reg):
+        await test_util.stop_nops()
+        await test_util.send_instr(self.dut, InstructionLW(a1, tp, self.base_address + reg).encode())
         val = await test_util.read_reg(self.dut, a1)
         test_util.start_nops(self.dut)
         return val

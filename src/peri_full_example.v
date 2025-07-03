@@ -5,8 +5,8 @@
 
 `default_nettype none
 
-// Peripheral template for a standard TinyQV peripheral
-module tqvp_example (
+// Template for a full TinyQV peripheral
+module tqvp_full_example (
     input         clk,
     input         rst_n,
 
@@ -40,8 +40,8 @@ module tqvp_example (
         end
     end
 
-    // The bottom 7 bits of the stored data are output to uo_out.
-    assign uo_out = example_data[7:0];
+    // The bottom 8 bits of the stored data are added to ui_in and output to uo_out.
+    assign uo_out = example_data[7:0] + ui_in;
 
     // Address 0 reads the example data register.  
     // Address 4 reads ui_in

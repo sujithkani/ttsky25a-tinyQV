@@ -205,7 +205,7 @@ module tinyQV_peripherals (
     // --------------------------------------------------------------------- //
     // Full interface peripherals
 
-    tqvp_example i_user_peri04 (
+    tqvp_full_example i_user_peri04 (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -224,7 +224,7 @@ module tinyQV_peripherals (
         .user_interrupt(user_interrupts[4])
     );
 
-    tqvp_example i_user_peri05 (
+    tqvp_full_example i_user_peri05 (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -246,7 +246,7 @@ module tinyQV_peripherals (
     // Unallocated peripherals, move up to explicit entry above to add a design.
     generate
         for (i = 6; i < 16; i = i + 1) begin
-            tqvp_example i_user_peri (
+            tqvp_full_example i_user_peri (
                 .clk(clk),
                 .rst_n(rst_n),
 
@@ -268,9 +268,9 @@ module tinyQV_peripherals (
     endgenerate
 
     // --------------------------------------------------------------------- //
-    // Simple interface peripherals
+    // Byte interface peripherals
 
-    tqvp_simple_example i_user_simple00 (
+    tqvp_byte_example i_user_simple00 (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -285,7 +285,7 @@ module tinyQV_peripherals (
         .data_out(data_from_simple_peri[0])
     );
 
-    tqvp_simple_example i_user_simple01 (
+    tqvp_byte_example i_user_simple01 (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -300,7 +300,7 @@ module tinyQV_peripherals (
         .data_out(data_from_simple_peri[1])
     );
 
-    tqvp_simple_example i_user_simple02 (
+    tqvp_byte_example i_user_simple02 (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -318,7 +318,7 @@ module tinyQV_peripherals (
     // Unallocated peripherals, move up to explicit entry above to add a design.
     generate
         for (i = 3; i < 16; i = i + 1) begin
-            tqvp_simple_example i_user_simple (
+            tqvp_byte_example i_user_simple (
                 .clk(clk),
                 .rst_n(rst_n),
 

@@ -5,8 +5,8 @@
 
 `default_nettype none
 
-// Peripheral template for a simple TinyQV peripheral
-module tqvp_simple_example (
+// Template for a TinyQV byte peripheral
+module tqvp_byte_example (
     input         clk,
     input         rst_n,
 

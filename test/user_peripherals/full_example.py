@@ -7,7 +7,7 @@ from cocotb.triggers import ClockCycles
 
 from tqv import TinyQV
 
-PERIPHERAL_NUM = 31
+PERIPHERAL_NUM = 15
 
 @cocotb.test()
 async def test_project(dut):
@@ -25,8 +25,10 @@ async def test_project(dut):
     dut._log.info("Test project behavior")
 
     # Test register write and read back
-    await tqv.write_reg(0, 20)
-    assert await tqv.read_reg(0) == 20
+    await tqv.write_word_reg(0, 0x12345678)
+    assert await tqv.read_byte_reg(0) == 0x78
+    assert await tqv.read_hword_reg(0) == 0x5678
+    assert await tqv.read_word_reg(0) == 0x12345678
 
     # Set an input value, in the example this will be added to the register value
     dut.ui_in.value = 30
@@ -37,21 +39,14 @@ async def test_project(dut):
 
     # The following assersion is just an example of how to check the output values.
     # Change it to match the actual expected output of your module:
-    assert dut.uo_out.value == 50
+    assert dut.uo_out.value == 0x96
 
     # Input value should be read back from register 1
-    assert await tqv.read_reg(1) == 30
+    assert await tqv.read_byte_reg(4) == 30
 
     # Zero should be read back from register 2
-    assert await tqv.read_reg(2) == 0
+    assert await tqv.read_word_reg(8) == 0
 
-    # Second write should work
-    await tqv.write_reg(0, 40)
-
-    # The store will take a few cycles to complete
-    for i in range(16):
-        if dut.uo_out.value == 70: break
-        await ClockCycles(dut.clk, 3)
-    else:
-        # The write should have completed by now.
-        assert dut.uo_out.value == 70
+    # A second write should work
+    await tqv.write_word_reg(0, 40)
+    assert dut.uo_out.value == 70

@@ -19,8 +19,8 @@ project:
   source_files:
     - "project.v"
     - "peripherals.v"
-    - "peri_example.v"
-    - "peri_simple_example.v"
+    - "peri_full_example.v"
+    - "peri_byte_example.v"
     - "peri_uart.v"
     - "tinyQV/cpu/tinyqv.v"
     - "tinyQV/cpu/alu.v"
