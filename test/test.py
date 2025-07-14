@@ -840,7 +840,7 @@ async def test_random(dut):
     await start_read(dut, 0)
 
     seed = random.randint(0, 0xFFFFFFFF)
-    #seed = 1508125843
+    #seed = 3287254906
 
     latch_ram = False
     if latch_ram:
@@ -856,7 +856,7 @@ async def test_random(dut):
             RAM.append((val >> 24) & 0xFF)
     
     debug = False
-    if debug: print("RAM: ", RAM)
+    if debug and latch_ram: print("RAM: ", RAM)
 
     for test in range(10):
         random.seed(seed + test)
@@ -899,6 +899,7 @@ async def test_random(dut):
                         else:
                             # Use PSRAM
                             addr = random.randint(0x1000000-instr.imm, 0x1fffffc-instr.imm)
+                            if debug: print(f"addr {addr + instr.imm:x}")
                         await set_reg(dut, instr.base_reg, addr)
 
                     instr.execute_fn(rd, rs1, arg2)
@@ -909,7 +910,9 @@ async def test_random(dut):
             if debug: print("x{} = x{} {} {}, now {} {:08x}".format(rd, rs1, arg2, instr.name, reg[rd], instr.encode(rd, rs1, arg2)))
             await send_instr(dut, instr.encode(rd, rs1, arg2))
             if instr.is_mem_op:
-                if addr < 0x2000000:
+                if addr < 0x4000000:
+                    assert addr + instr.imm >= 0
+                    assert addr + instr.imm < 0x2000000
                     await instr.do_mem_op(dut, addr + instr.imm)
                 elif instr.name[0] == 's':
                     val = instr.fn(instr.rs1)
