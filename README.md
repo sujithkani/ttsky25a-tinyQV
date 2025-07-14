@@ -2,14 +2,18 @@
 
 # TinyQV - A Risc-V SoC for Tiny Tapeout
 
+TinyQV will be accepting peripherals for tape out on the Tiny Tapeout [ttsky25a shuttle](https://app.tinytapeout.com/shuttles/ttsky25a) as part of the Tiny Tapeout Risc-V peripheral competition.
+
+To contribute, start from either:
+- The [byte peripheral template](https://github.com/TinyTapeout/tinyqv-byte-peripheral-template) for simpler peripherals, or
+- The [full peripheral template](https://github.com/TinyTapeout/tinyqv-full-peripheral-template).
+
+Further reading:
 - [Documentation for project](docs/info.md)
 - [More details about tinyQV](https://github.com/MichaelBell/tinyQV)
 - [tinyQV-sdk for building tinyQV programs](https://github.com/MichaelBell/tinyQV-sdk)
 - [Example tinyQV programs](https://github.com/MichaelBell/tinyQV-projects)
-
-# Tiny Tapeout Verilog Project Template
-
-- [Read the documentation for project](docs/info.md)
+- [tinyQV Micropython](https://github.com/MichaelBell/micropython/tree/tinyqv-sky25a)
 
 ## What is Tiny Tapeout?
 
