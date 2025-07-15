@@ -7,11 +7,14 @@
 
 // Template for a full TinyQV peripheral
 module tqvp_full_example (
-    input         clk,
-    input         rst_n,
+    input         clk,          // Clock - the TinyQV project clock is normally set to 64MHz.
+    input         rst_n,        // Reset_n - low to reset.
 
-    input  [7:0]  ui_in,        // The input PMOD, always available
-    output [7:0]  uo_out,       // The output PMOD.  Each wire is only connected if this peripheral is selected
+    input  [7:0]  ui_in,        // The input PMOD, always available.  Note that ui_in[7] is normally used for UART RX.
+                                // The inputs are synchronized to the clock, note this will introduce 2 cycles of delay on the inputs.
+
+    output [7:0]  uo_out,       // The output PMOD.  Each wire is only connected if this peripheral is selected.
+                                // Note that uo_out[0] is normally used for UART TX.
 
     input [5:0]   address,      // Address within this peripheral's address space
     input [31:0]  data_in,      // Data in to the peripheral, bottom 8, 16 or all 32 bits are valid on write.
@@ -23,7 +26,7 @@ module tqvp_full_example (
     output [31:0] data_out,     // Data out from the peripheral, bottom 8, 16 or all 32 bits are valid on read when data_ready is high.
     output        data_ready,
 
-    output        user_interrupt  // Each user peripheral gets an interrupt?  There may be a limit to how many we can easily support.
+    output        user_interrupt  // Dedicated interrupt request for this peripheral
 );
 
     // Implement a 32-bit read/write register at address 0

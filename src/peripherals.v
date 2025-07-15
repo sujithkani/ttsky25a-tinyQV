@@ -164,7 +164,7 @@ module tinyQV_peripherals (
     // --------------------------------------------------------------------- //
     // UART
 
-    tqvp_uart_tx i_uart_tx (
+    tqvp_uart_tx_wrapper i_uart_tx (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -183,7 +183,7 @@ module tinyQV_peripherals (
         .user_interrupt(user_interrupts[PERI_UART_TX])
     );
 
-    tqvp_uart_rx i_uart_rx (
+    tqvp_uart_rx_wrapper i_uart_rx (
         .clk(clk),
         .rst_n(rst_n),
 

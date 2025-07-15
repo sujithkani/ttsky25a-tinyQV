@@ -75,8 +75,10 @@ See also [debug docs](debug.md)
 | -------- | ------- | ----------- |
 | TX_DATA | 0x8000080 (W) | Transmits the byte on the UART |
 | TX_BUSY | 0x8000084 (R) | Bit 0 indicates whether the UART TX is busy, bytes should not be written to the data register while this bit is set. |
+| TX_DIVIDER | 0x8000088 (R/W) | 13 bit clock divider to set the TX baud rate |
 | RX_DATA | 0x80000C0 (R) | Reads any received byte |
 | RX_STATUS | 0x80000C4 (R) | Bit 0 indicates whether a received byte is available to be read. |
+| RX_DIVIDER | 0x80000C8 (R/W) | 13 bit clock divider to set the RX baud rate |
 
 # How to test
 

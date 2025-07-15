@@ -21,7 +21,9 @@ project:
     - "peripherals.v"
     - "peri_full_example.v"
     - "peri_byte_example.v"
-    - "peri_uart.v"
+    - "user_peripherals/uart/peri_uart.v"
+    - "user_peripherals/uart/uart_rx.v"
+    - "user_peripherals/uart/uart_tx.v"
     - "tinyQV/cpu/tinyqv.v"
     - "tinyQV/cpu/alu.v"
     - "tinyQV/cpu/core.v"
@@ -34,7 +36,6 @@ project:
     - "tinyQV/cpu/latch_reg.v"
     - "tinyQV/cpu/time.v"
     - "tinyQV/peri/uart/uart_tx.v"
-    - "tinyQV/peri/uart/uart_rx.v"
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
 pinout:
