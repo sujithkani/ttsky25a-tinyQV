@@ -10,7 +10,7 @@ To contribute, start from either:
 
 Further reading:
 - [Documentation for project](docs/info.md)
-- [More details about tinyQV](https://github.com/MichaelBell/tinyQV)
+- [More details about tinyQV](https://github.com/MichaelBell/tinyQV/tree/ttsky25a)
 - [tinyQV-sdk for building tinyQV programs](https://github.com/MichaelBell/tinyQV-sdk)
 - [Example tinyQV programs](https://github.com/MichaelBell/tinyQV-projects)
 - [tinyQV Micropython](https://github.com/MichaelBell/micropython/tree/tinyqv-sky25a)
