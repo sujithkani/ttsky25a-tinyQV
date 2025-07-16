@@ -15,6 +15,10 @@ Further reading:
 - [Example tinyQV programs](https://github.com/MichaelBell/tinyQV-projects)
 - [tinyQV Micropython](https://github.com/MichaelBell/micropython/tree/tinyqv-sky25a)
 
+## TinyQV SoC Diagram
+
+![TinyQV Soc Arhitecture Diagram](docs/architecture.png)
+
 ## What is Tiny Tapeout?
 
 Tiny Tapeout is an educational project that aims to make it easier and cheaper than ever to get your digital and analog designs manufactured on a real chip.
