@@ -66,11 +66,10 @@ async def test_throughput(dut):
     clock = Clock(dut.clk, 15.624, units="ns")
     cocotb.start_soon(clock.start())
 
-    for latency in range(1, 3):
+    for latency in range(1, 4):
         start_time = cocotb.utils.get_sim_time("ns")
         await reset(dut, latency)
 
-        s = await read_string(dut)
-        dut._log.info(f"Received: {s}")
-        s = await read_string(dut)
-        dut._log.info(f"Received: {s}")
+        for i in range(10):
+            s = await read_string(dut)
+            dut._log.info(f"Received: {s}")
