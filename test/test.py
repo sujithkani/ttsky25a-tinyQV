@@ -384,6 +384,48 @@ async def test_load_bug(dut):
   await read_byte(dut, a3, input_byte)
   await read_byte(dut, a2, 0x123)
 
+@cocotb.test()
+async def test_load_throughput(dut):
+    dut._log.info("Start")
+
+    clock = Clock(dut.clk, 15.624, units="ns")
+    cocotb.start_soon(clock.start())
+
+    # Reset
+    await reset(dut)
+
+    input_byte = 0b01101000
+    dut.ui_in.value = input_byte
+
+    def encode_clwsp(reg, base_reg, imm):
+        scrambled = (((imm << (12 - 5)) & 0b1000000000000) |
+                        ((imm << ( 4 - 2)) & 0b0000001110000) |
+                        ((imm >> ( 6 - 2)) & 0b0000000001100))
+        if base_reg == 2:
+            return 0x4002 | scrambled | (reg << 7)
+        else:
+            return 0x6002 | scrambled | (reg << 7)  
+  
+    def encode_cswsp(base_reg, reg, imm):
+        scrambled = (((imm << ( 9 - 2)) & 0b1111000000000) |
+                        ((imm << ( 7 - 6)) & 0b0000110000000))
+        if base_reg == 2:
+            return 0xC002 | scrambled | (reg << 2)
+        else:
+            return 0xE002 | scrambled | (reg << 2)
+
+    # Should start reading flash after 1 cycle
+    await ClockCycles(dut.clk, 1)
+    await start_read(dut, 0)
+    await send_instr(dut, InstructionAUIPC(sp, 0x1001).encode())
+    await send_instr(dut, InstructionADDI(a0, x0, 0x001).encode())
+    await send_instr(dut, InstructionBEQ(a0, x0, 270).encode())
+
+    for i in range(32):
+        await send_instr(dut, encode_clwsp(a2, sp, i*4))
+        await send_instr(dut, encode_cswsp(tp, a2, 0x3c0))
+        await expect_load(dut, 0x1001000 + i*4, i)
+
 
 ### Random operation testing ###
 reg = [0] * 16
