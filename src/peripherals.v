@@ -41,12 +41,16 @@ module tinyQV_peripherals (
     reg         data_out_hold;
     reg         data_ready_r;
 
-    reg         last_read_req;
     wire        read_req = data_read_n != 2'b11;
 
     // Muxed data out direct from selected peripheral
     reg [31:0] data_from_peri;
     reg        data_ready_from_peri;
+
+    // Must mask the data_read_n to avoid extra read while
+    // buffering the result
+    wire [1:0] data_read_n_peri;
+    assign data_read_n_peri = data_read_n | {2{data_ready_r}};
 
     wire [31:0] data_from_user_peri   [0:15];
     wire [7:0]  data_from_simple_peri [0:15];
@@ -64,7 +68,6 @@ module tinyQV_peripherals (
     always @(posedge clk) begin
         if (!rst_n) begin
             data_out_hold <= 0;
-            last_read_req <= 0;
         end else begin
             if (data_read_complete) data_out_hold <= 0;
 
@@ -73,10 +76,8 @@ module tinyQV_peripherals (
                 data_out_r <= data_from_peri;
             end
 
-            last_read_req <= read_req;
-
             // Data ready must be registered because data_out is.
-            data_ready_r <= (last_read_req && read_req && data_ready_from_peri);
+            data_ready_r <= read_req && data_ready_from_peri;
         end
     end
 
@@ -172,8 +173,8 @@ module tinyQV_peripherals (
         .address(addr_in[5:0]),
         .data_in(data_in),
 
-        .data_write_n(data_write_n | {2{~peri_user[PERI_UART]}}),
-        .data_read_n(data_read_n   | {2{~peri_user[PERI_UART]}}),
+        .data_write_n(data_write_n    | {2{~peri_user[PERI_UART]}}),
+        .data_read_n(data_read_n_peri | {2{~peri_user[PERI_UART]}}),
 
         .data_out(data_from_user_peri[PERI_UART]),
         .data_ready(data_ready_from_user_peri[PERI_UART]),
@@ -199,8 +200,8 @@ module tinyQV_peripherals (
         .address(addr_in[5:0]),
         .data_in(data_in),
 
-        .data_write_n(data_write_n | {2{~peri_user[4]}}),
-        .data_read_n(data_read_n   | {2{~peri_user[4]}}),
+        .data_write_n(data_write_n    | {2{~peri_user[4]}}),
+        .data_read_n(data_read_n_peri | {2{~peri_user[4]}}),
 
         .data_out(data_from_user_peri[4]),
         .data_ready(data_ready_from_user_peri[4]),
@@ -218,8 +219,8 @@ module tinyQV_peripherals (
         .address(addr_in[5:0]),
         .data_in(data_in),
 
-        .data_write_n(data_write_n | {2{~peri_user[5]}}),
-        .data_read_n(data_read_n   | {2{~peri_user[5]}}),
+        .data_write_n(data_write_n    | {2{~peri_user[5]}}),
+        .data_read_n(data_read_n_peri | {2{~peri_user[5]}}),
 
         .data_out(data_from_user_peri[5]),
         .data_ready(data_ready_from_user_peri[5]),
@@ -240,8 +241,8 @@ module tinyQV_peripherals (
                 .address(addr_in[5:0]),
                 .data_in(data_in),
 
-                .data_write_n(data_write_n | {2{~peri_user[i]}}),
-                .data_read_n(data_read_n   | {2{~peri_user[i]}}),
+                .data_write_n(data_write_n    | {2{~peri_user[i]}}),
+                .data_read_n(data_read_n_peri | {2{~peri_user[i]}}),
 
                 .data_out(data_from_user_peri[i]),
                 .data_ready(data_ready_from_user_peri[i]),
