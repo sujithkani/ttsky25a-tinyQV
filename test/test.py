@@ -50,10 +50,24 @@ async def test_start(dut):
   assert dut.uart_tx.value == 1
 
   # Test UART RX
-  for j in range(10):
+  for j in range(5):
     assert dut.uart_rts.value == 0
+
     uart_rx_byte = random.randint(0, 255)
     val = uart_rx_byte
+    dut.uart_rx.value = 0
+    await Timer(bit_time, "ns")
+    for i in range(8):
+        dut.uart_rx.value = val & 1
+        await Timer(bit_time, "ns")
+        assert dut.uart_rts.value == 0
+        val >>= 1
+    dut.uart_rx.value = 1
+    await Timer(bit_time, "ns")
+    assert dut.uart_rts.value == 0
+
+    uart_rx_byte2 = random.randint(0, 255)
+    val = uart_rx_byte2
     dut.uart_rx.value = 0
     await Timer(bit_time, "ns")
     for i in range(8):
@@ -73,9 +87,14 @@ async def test_start(dut):
     await read_byte(dut, x1, uart_rx_byte)
     assert dut.uart_rts.value == 0
     await send_instr(dut, InstructionLW(x1, tp, 0x84).encode())
+    await read_byte(dut, x1, 0x2)
+    await send_instr(dut, InstructionLW(x1, tp, 0x80).encode())
+    await read_byte(dut, x1, uart_rx_byte2)
+    assert dut.uart_rts.value == 0
+    await send_instr(dut, InstructionLW(x1, tp, 0x84).encode())
     await read_byte(dut, x1, 0)
 
-    if j != 9:
+    if j != 4:
         start_nops(dut)
 
   # Test Debug UART TX
@@ -214,6 +233,8 @@ async def test_uart_divider(dut):
         await send_instr(dut, InstructionLUI(x1, divider_upper).encode())
         await send_instr(dut, InstructionADDI(x1, x1, divider_lower).encode())
         await send_instr(dut, InstructionSW(tp, x1, 0x88).encode())
+        await send_instr(dut, InstructionLW(a0, tp, 0x88).encode())
+        assert await read_reg(dut, a0) == divider
 
         # Test UART TX
         uart_byte = 0x54
@@ -241,6 +262,19 @@ async def test_uart_divider(dut):
             for i in range(8):
                 dut.uart_rx.value = val & 1
                 await Timer(bit_time, "ns")
+                assert dut.uart_rts.value == 0
+                val >>= 1
+            dut.uart_rx.value = 1
+            await Timer(bit_time, "ns")
+            assert dut.uart_rts.value == 0
+
+            uart_rx_byte2 = random.randint(0, 255)
+            val = uart_rx_byte2
+            dut.uart_rx.value = 0
+            await Timer(bit_time, "ns")
+            for i in range(8):
+                dut.uart_rx.value = val & 1
+                await Timer(bit_time, "ns")
                 assert dut.uart_rts.value == 1
                 val >>= 1
             dut.uart_rx.value = 1
@@ -251,9 +285,13 @@ async def test_uart_divider(dut):
 
             await send_instr(dut, InstructionLW(x1, tp, 0x84).encode())
             await read_byte(dut, x1, 0x2)
-            assert dut.uart_rts.value == 1
             await send_instr(dut, InstructionLW(x1, tp, 0x80).encode())
             await read_byte(dut, x1, uart_rx_byte)
+            assert dut.uart_rts.value == 0
+            await send_instr(dut, InstructionLW(x1, tp, 0x84).encode())
+            await read_byte(dut, x1, 0x2)
+            await send_instr(dut, InstructionLW(x1, tp, 0x80).encode())
+            await read_byte(dut, x1, uart_rx_byte2)
             assert dut.uart_rts.value == 0
             await send_instr(dut, InstructionLW(x1, tp, 0x84).encode())
             await read_byte(dut, x1, 0)

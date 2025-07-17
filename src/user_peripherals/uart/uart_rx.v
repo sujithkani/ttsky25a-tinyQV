@@ -132,7 +132,8 @@ always @(posedge clk) begin : p_rts
     if (!resetn) begin
         uart_rts <= 1'b1;
     end else begin
-        uart_rts <= fsm_state > FSM_START;  // RTS is active low, 0 when IDLE or START.
+        // RTS is active low, 0 when IDLE or START, or when read is asserted.
+        uart_rts <= fsm_state > FSM_START && !uart_rx_read;  
     end
 end
 

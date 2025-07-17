@@ -71,16 +71,35 @@ module tqvp_uart_wrapper #(parameter
         .resetn(rst_n),
         .uart_rxd(ui_in[7]),
         .uart_rts(uo_out[1]),
-        .uart_rx_read((address == 6'h0 && data_read_n != 2'b11)),
+        .uart_rx_read(!uart_rx_buffered),
         .uart_rx_valid(uart_rx_valid),
         .uart_rx_data(uart_rx_data),
         .baud_divider(baud_divider) 
     );
 
-    // Interrupt on ability to send
-    assign user_interrupt[0] = uart_rx_valid;
-    assign data_out = address == 6'h0 ? {24'd0, uart_rx_data} :
-                      address == 6'h4 ? {30'd0, uart_rx_valid, uart_tx_busy} :
+    // Buffer one byte of received data
+    reg uart_rx_buffered;
+    reg [7:0] uart_rx_buf_data;
+
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            uart_rx_buffered <= 0;
+        end else begin
+            if (uart_rx_buffered == 0) begin
+                uart_rx_buffered <= uart_rx_valid;
+                uart_rx_buf_data <= uart_rx_data;
+            end else begin
+                if (address == 6'h0 && data_read_n != 2'b11) begin
+                    uart_rx_buffered <= 0;
+                end
+            end
+        end
+    end
+
+    // Interrupt on byte available
+    assign user_interrupt[0] = uart_rx_buffered;
+    assign data_out = address == 6'h0 ? {24'd0, uart_rx_buf_data} :
+                      address == 6'h4 ? {30'd0, uart_rx_buffered, uart_tx_busy} :
                       address == 6'h8 ? {19'd0, baud_divider} : 32'd0;
     assign data_ready = 1;
 
