@@ -87,8 +87,7 @@ module tinyQV_peripherals (
     // Decode the address to select the active peripheral
 
     localparam PERI_GPIO = 1;
-    localparam PERI_UART_TX = 2;
-    localparam PERI_UART_RX = 3;
+    localparam PERI_UART = 2;
 
     reg [15:0] peri_user;
     reg [15:0] peri_simple;
@@ -140,8 +139,7 @@ module tinyQV_peripherals (
         for (i = 0; i < 8; i = i + 1) begin
             always @(posedge clk) begin
                 if (!rst_n) begin
-                    gpio_out_func_sel[i] <= (i == 0) ? PERI_UART_TX : 
-                                            (i == 1) ? PERI_UART_RX : PERI_GPIO;
+                    gpio_out_func_sel[i] <= (i == 0 || i == 1) ? PERI_UART : PERI_GPIO;
                 end else if (peri_user[PERI_GPIO]) begin
                     if ({addr_in[5], addr_in[1:0]} == 3'b100 && addr_in[4:2] == i) begin
                         if (data_write_n != 2'b11) gpio_out_func_sel[i] <= data_in[4:0];
@@ -164,43 +162,29 @@ module tinyQV_peripherals (
     // --------------------------------------------------------------------- //
     // UART
 
-    tqvp_uart_tx_wrapper i_uart_tx (
+    tqvp_uart_wrapper i_uart (
         .clk(clk),
         .rst_n(rst_n),
 
         .ui_in(ui_in),
-        .uo_out(uo_out_from_user_peri[PERI_UART_TX]),
+        .uo_out(uo_out_from_user_peri[PERI_UART]),
 
         .address(addr_in[5:0]),
         .data_in(data_in),
 
-        .data_write_n(data_write_n | {2{~peri_user[PERI_UART_TX]}}),
-        .data_read_n(data_read_n   | {2{~peri_user[PERI_UART_TX]}}),
+        .data_write_n(data_write_n | {2{~peri_user[PERI_UART]}}),
+        .data_read_n(data_read_n   | {2{~peri_user[PERI_UART]}}),
 
-        .data_out(data_from_user_peri[PERI_UART_TX]),
-        .data_ready(data_ready_from_user_peri[PERI_UART_TX]),
+        .data_out(data_from_user_peri[PERI_UART]),
+        .data_ready(data_ready_from_user_peri[PERI_UART]),
 
-        .user_interrupt(user_interrupts[PERI_UART_TX])
+        .user_interrupt(user_interrupts[PERI_UART+1:PERI_UART])
     );
 
-    tqvp_uart_rx_wrapper i_uart_rx (
-        .clk(clk),
-        .rst_n(rst_n),
-
-        .ui_in(ui_in),
-        .uo_out(uo_out_from_user_peri[PERI_UART_RX]),
-
-        .address(addr_in[5:0]),
-        .data_in(data_in),
-
-        .data_write_n(data_write_n | {2{~peri_user[PERI_UART_RX]}}),
-        .data_read_n(data_read_n   | {2{~peri_user[PERI_UART_RX]}}),
-
-        .data_out(data_from_user_peri[PERI_UART_RX]),
-        .data_ready(data_ready_from_user_peri[PERI_UART_RX]),
-
-        .user_interrupt(user_interrupts[PERI_UART_RX])
-    );
+    // There is no peripheral 3, UART uses its interrupt.
+    assign uo_out_from_user_peri[3] = 8'h0;
+    assign data_from_user_peri[3] = 32'h0;
+    assign data_ready_from_user_peri[3] = 1;
 
     // --------------------------------------------------------------------- //
     // Full interface peripherals

@@ -67,12 +67,12 @@ async def test_start(dut):
 
     await stop_nops()
 
-    await send_instr(dut, InstructionLW(x1, tp, 0xc4).encode())
-    await read_byte(dut, x1, 0x1)
-    await send_instr(dut, InstructionLW(x1, tp, 0xc0).encode())
+    await send_instr(dut, InstructionLW(x1, tp, 0x84).encode())
+    await read_byte(dut, x1, 0x2)
+    await send_instr(dut, InstructionLW(x1, tp, 0x80).encode())
     await read_byte(dut, x1, uart_rx_byte)
     assert dut.uart_rts.value == 0
-    await send_instr(dut, InstructionLW(x1, tp, 0xc4).encode())
+    await send_instr(dut, InstructionLW(x1, tp, 0x84).encode())
     await read_byte(dut, x1, 0)
 
     if j != 9:
@@ -214,7 +214,6 @@ async def test_uart_divider(dut):
         await send_instr(dut, InstructionLUI(x1, divider_upper).encode())
         await send_instr(dut, InstructionADDI(x1, x1, divider_lower).encode())
         await send_instr(dut, InstructionSW(tp, x1, 0x88).encode())
-        await send_instr(dut, InstructionSW(tp, x1, 0xc8).encode())
 
         # Test UART TX
         uart_byte = 0x54
@@ -250,13 +249,13 @@ async def test_uart_divider(dut):
 
             await stop_nops()
 
-            await send_instr(dut, InstructionLW(x1, tp, 0xc4).encode())
-            await read_byte(dut, x1, 0x1)
+            await send_instr(dut, InstructionLW(x1, tp, 0x84).encode())
+            await read_byte(dut, x1, 0x2)
             assert dut.uart_rts.value == 1
-            await send_instr(dut, InstructionLW(x1, tp, 0xc0).encode())
+            await send_instr(dut, InstructionLW(x1, tp, 0x80).encode())
             await read_byte(dut, x1, uart_rx_byte)
             assert dut.uart_rts.value == 0
-            await send_instr(dut, InstructionLW(x1, tp, 0xc4).encode())
+            await send_instr(dut, InstructionLW(x1, tp, 0x84).encode())
             await read_byte(dut, x1, 0)
 
             if j != 2:
