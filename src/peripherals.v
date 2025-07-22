@@ -270,7 +270,7 @@ module tinyQV_peripherals (
         .data_out(data_from_simple_peri[0])
     );
 
-    tqvp_byte_example i_user_simple01 (
+    tqvp_edge_counter i_edge_counter01 (
         .clk(clk),
         .rst_n(rst_n),
 
