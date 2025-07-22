@@ -17,13 +17,13 @@ The encoder counts from 0 to 255.
 
 ## Register map
 
-| Address | Name  | Access | Description                                                         |
-|---------|-------|--------|---------------------------------------------------------------------|
-| 0x00    | DATA  | R      | Value of Encoder 0                                                  |
-| 0x01    | DATA  | R      | Value of Encoder 1                                                  |
-| 0x02    | DATA  | R      | Value of Encoder 2                                                  |
-| 0x03    | DATA  | R      | Value of Encoder 3                                                  |
-| 0x04    | DATA  | R/W    | Debounce frequency. Will be left shifted by 4                       |
+| Address      | Name  | Access | Description                                                         |
+|--------------|-------|--------|---------------------------------------------------------------------|
+| 0x8000400    | DATA  | R      | Value of Encoder 0                                                  |
+| 0x8000401    | DATA  | R      | Value of Encoder 1                                                  |
+| 0x8000402    | DATA  | R      | Value of Encoder 2                                                  |
+| 0x8000403    | DATA  | R      | Value of Encoder 3                                                  |
+| 0x8000404    | DATA  | R/W    | Debounce frequency. Will be left shifted by 4                       |
 
 ## How to test
 
