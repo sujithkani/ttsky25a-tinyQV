@@ -6,7 +6,8 @@ SIM ?= icarus
 WAVES ?= 1
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
-PROJECT_SOURCES = project.v peri*.v tinyQV/cpu/*.v tinyQV/peri/uart/uart_tx.v user_peripherals/uart/*.v #user_peripherals/*.v
+PROJECT_SOURCES = project.v peri*.v tinyQV/cpu/*.v tinyQV/peri/uart/uart_tx.v user_peripherals/uart/*.v user_peripherals/encoder/*.v
+export PYTHONPATH = user_peripherals/matt_encoder
 
 ifneq ($(GATES),yes)
 

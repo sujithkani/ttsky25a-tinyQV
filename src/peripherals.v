@@ -255,7 +255,7 @@ module tinyQV_peripherals (
     // --------------------------------------------------------------------- //
     // Byte interface peripherals
 
-    tqvp_byte_example i_user_simple00 (
+    tqvp_matt_encoder matt_encoder00 (
         .clk(clk),
         .rst_n(rst_n),
 
