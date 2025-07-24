@@ -2,6 +2,7 @@ from cocotb.triggers import ClockCycles
 
 from riscvmodel.insn import *
 from riscvmodel.regnames import x0, tp, a0, a1
+from riscvmodel import csrnames
 
 import test_util
 
@@ -119,3 +120,11 @@ class TinyQV:
         val = await test_util.read_reg(self.dut, a1)
         test_util.start_nops(self.dut)
         return val
+
+    # Check whether the user interrupt is asserted
+    async def is_interrupt_asserted(self):
+        await test_util.stop_nops()
+        await test_util.send_instr(self.dut, InstructionCSRRS(a1, x0, csrnames.mip).encode())
+        val = await test_util.read_reg(self.dut, a1)
+        test_util.start_nops(self.dut)
+        return (val & (1 << (16 + self.peripheral_num))) != 0
