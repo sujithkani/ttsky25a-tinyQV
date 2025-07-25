@@ -1,4 +1,4 @@
-`timescale 1ns / 1ps
+
 
 module ws2812b_pulse_decoder #(
     parameter CLK_HZ = 64000000,

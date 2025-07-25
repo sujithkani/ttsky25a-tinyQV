@@ -1,3 +1,5 @@
+
+
 module ws2812b_idle_detector #(
     parameter CLK_HZ = 64000000,   // system clock
     parameter IDLE_US = 60         // idle threshold in microseconds
