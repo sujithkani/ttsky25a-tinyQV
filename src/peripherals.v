@@ -285,7 +285,22 @@ module tinyQV_peripherals (
         .data_out(data_from_simple_peri[1])
     );
 
-    tqvp_byte_example i_user_simple02 (
+    tt_um_impostor_WS2812b javi_WS2812b_slave (
+        .clk(clk),
+        .rst_n(rst_n),
+
+        .ui_in(ui_in),
+        .uo_out(uo_out_from_simple_peri[2]),
+
+        .address(addr_in[3:0]),
+
+        .data_write((data_write_n != 2'b11) & peri_simple[2]),
+        .data_in(data_in[7:0]),
+
+        .data_out(data_from_simple_peri[2])
+    );
+
+        tqvp_byte_example  i_user_simple02  (
         .clk(clk),
         .rst_n(rst_n),
 
