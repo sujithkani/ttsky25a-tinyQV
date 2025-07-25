@@ -8,7 +8,7 @@ from cocotb.triggers import ClockCycles
 from impostorWS2812b import WS2812BGenerator
 from tqv import TinyQV
 
-PERIPHERAL_NUM = 17
+PERIPHERAL_NUM = 18
 REGISTER_DELAY = 100
 
 @cocotb.test()
