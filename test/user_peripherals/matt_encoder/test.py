@@ -9,6 +9,7 @@ from encoder import Encoder
 from tqv import TinyQV
 
 PERIPHERAL_NUM = 16
+REGISTER_DELAY = 100
 
 @cocotb.test()
 async def test_project(dut):
@@ -21,10 +22,10 @@ async def test_project(dut):
 
     # set to at least width of debounce shift register * debounce cycles
     clocks_per_phase = 600 
-    encoder0 = Encoder(dut.clk, dut.ui_in[0], dut.ui_in[1], clocks_per_phase = clocks_per_phase, noise_cycles = clocks_per_phase / 4)
-    encoder1 = Encoder(dut.clk, dut.ui_in[2], dut.ui_in[3], clocks_per_phase = clocks_per_phase, noise_cycles = clocks_per_phase / 4)
-    encoder2 = Encoder(dut.clk, dut.ui_in[4], dut.ui_in[5], clocks_per_phase = clocks_per_phase, noise_cycles = clocks_per_phase / 4)
-    encoder3 = Encoder(dut.clk, dut.ui_in[6], dut.ui_in[7], clocks_per_phase = clocks_per_phase, noise_cycles = clocks_per_phase / 4)
+    encoder0 = Encoder(dut.clk, dut.ui_in[0], dut.ui_in[1], clocks_per_phase = clocks_per_phase, noise_cycles = clocks_per_phase / 8)
+    encoder1 = Encoder(dut.clk, dut.ui_in[2], dut.ui_in[3], clocks_per_phase = clocks_per_phase, noise_cycles = clocks_per_phase / 8)
+    encoder2 = Encoder(dut.clk, dut.ui_in[4], dut.ui_in[5], clocks_per_phase = clocks_per_phase, noise_cycles = clocks_per_phase / 8)
+    encoder3 = Encoder(dut.clk, dut.ui_in[6], dut.ui_in[7], clocks_per_phase = clocks_per_phase, noise_cycles = clocks_per_phase / 8)
 
     # Interact with your design's registers through this TinyQV class.
     # This will allow the same test to be run when your design is integrated
@@ -59,25 +60,26 @@ async def test_project(dut):
     dut._log.info("checking encoder 0")
     for i in range(clocks_per_phase * 2 * 20):
         await encoder0.update(1)
-    await ClockCycles(dut.clk, 10)
+    await ClockCycles(dut.clk, REGISTER_DELAY)
     assert await tqv.read_reg(0) == 20
 
     # twist the encoder knob
     dut._log.info("checking encoder 1")
     for i in range(clocks_per_phase * 2 * 30):
         await encoder1.update(1)
-    await ClockCycles(dut.clk, 10)
+    await ClockCycles(dut.clk, REGISTER_DELAY)
     assert await tqv.read_reg(1) == 30
 
     # twist the encoder knob
     dut._log.info("checking encoder 2")
     for i in range(clocks_per_phase * 2 * 40):
         await encoder2.update(1)
-    await ClockCycles(dut.clk, 10)
+    await ClockCycles(dut.clk, REGISTER_DELAY)
     assert await tqv.read_reg(2) == 40
 
-    # twist the encoder knob
-    # dut._log.info("checking encoder 3")
-    # for i in range(clocks_per_phase * 2 * 50):
-    #     await encoder3.update(1)
-    # assert await tqv.read_reg(3) == 50
+    #twist the encoder knob
+    dut._log.info("checking encoder 3")
+    for i in range(clocks_per_phase * 2 * 50):
+        await encoder3.update(1)
+    await ClockCycles(dut.clk, REGISTER_DELAY)
+    assert await tqv.read_reg(3) == 50
