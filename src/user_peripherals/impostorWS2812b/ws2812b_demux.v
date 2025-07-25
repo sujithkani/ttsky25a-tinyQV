@@ -45,6 +45,13 @@ module ws2812b_demux (
                 FORWARDING: begin
                     dout <= din_raw;  // forward waveform directly
                 end
+
+                default: begin
+                    // Safe default handling: mute dout and clear rgb_ready
+                    dout <= 1'b0;
+                    rgb_ready <= 1'b0;
+                end
+                
             endcase
 
             if (idle) begin
