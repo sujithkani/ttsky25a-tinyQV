@@ -451,7 +451,7 @@ module tinyQV_peripherals (
         .data_out(data_from_simple_peri[1])
     );
 
-    tt_um_impostor_WS2812b javi_WS2812b_slave (
+    tqvp_impostor_WS2812b javi_WS2812b_slave (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -466,7 +466,7 @@ module tinyQV_peripherals (
         .data_out(data_from_simple_peri[2])
     );
 
-        tqvp_byte_example  i_user_simple02  (
+    tqvp_byte_example  i_user_simple02  (
         .clk(clk),
         .rst_n(rst_n),
 
