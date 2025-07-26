@@ -18,7 +18,7 @@ all: \
 	peri-full_example.xml \
 	prog-results.xml \
 	peri-matt_encoder.test.xml
-	peri-impostor_ws2812b_test.test.xml
+	peri-impostor_ws2812b.test.xml
 	cat *results.xml peri-*.xml > results.xml
 
 clean:
