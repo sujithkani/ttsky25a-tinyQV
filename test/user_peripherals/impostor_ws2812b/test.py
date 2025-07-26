@@ -51,7 +51,7 @@ async def test_project(dut):
     await tqv.reset()
 
     # Check if rgb?ready register is ON
-    ready = await tqv.read_reg(15)
+    ready = int(await tqv.read_reg(15))
     assert ready == 0
     dut._log.info("Reading rgb_ready is OFF")
 
@@ -66,18 +66,18 @@ async def test_project(dut):
     await ClockCycles(dut.clk, 10)
 
     dut._log.info("Reading rgb_ready is 0xFF and that cleared when writen a 0 to addr 0xe")
-    read1 = await tqv.read_reg(15)
+    read1 = int(await tqv.read_reg(15))
     await ClockCycles(dut.clk, 1)  # allow state update
     await tqv.write_reg(14, 0) 
     await ClockCycles(dut.clk, 1)  # allow clearing to propagate
-    read2 = await tqv.read_reg(15)
+    read2 = int(await tqv.read_reg(15))
     assert read1 == 0xFF
     assert read2 == 0x00
     
     # Read back registers
-    g = await tqv.read_reg(1)
-    r = await tqv.read_reg(0)
-    b = await tqv.read_reg(2)
+    g = int(await tqv.read_reg(1))
+    r = int(await tqv.read_reg(0))
+    b = int(await tqv.read_reg(2))
 
     dut._log.info(f"Read RGB = ({r:02X}, {g:02X}, {b:02X})")
     assert r == 0x34
@@ -96,11 +96,11 @@ async def test_project(dut):
     await ClockCycles(dut.clk, 10)
 
     dut._log.info("Reading rgb_ready is 0x00")
-    read1 = await tqv.read_reg(15)
+    read1 = int(await tqv.read_reg(15))
     await ClockCycles(dut.clk, 1)  # allow state update
     await tqv.write_reg(14, 0) 
     await ClockCycles(dut.clk, 1)  # allow clearing to propagate
-    read2 = await tqv.read_reg(15)
+    read2 = int(await tqv.read_reg(15))
     assert read1 == 0x00
     assert read2 == 0x00
 
@@ -116,7 +116,7 @@ async def test_project(dut):
     await ClockCycles(dut.clk, 10)
 
     # Check that registers have been cleared (due to reset)
-    assert await tqv.read_reg(0) == 0x34  # Still holds, unless you clear manually in RTL
+    assert int(await tqv.read_reg(0)) == 0x34  # Still holds, unless you clear manually in RTL
     # You could modify RTL to clear on idle if desired
 
     #SEND AGAIN AFTER IDLE
@@ -129,9 +129,9 @@ async def test_project(dut):
     await ClockCycles(dut.clk, 10)
 
     # Read back registers
-    g = await tqv.read_reg(1)
-    r = await tqv.read_reg(0)
-    b = await tqv.read_reg(2)
+    g = int(await tqv.read_reg(1))
+    r = int(await tqv.read_reg(0))
+    b = int(await tqv.read_reg(2))
 
     dut._log.info(f"Read RGB = ({r:02X}, {g:02X}, {b:02X})")
     assert r == 0xcd
