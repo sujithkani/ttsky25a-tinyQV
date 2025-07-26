@@ -11,7 +11,7 @@ module char_rom #(
 reg [DATA_WIDTH-1:0] mem [0:ADDR_MAX-ADDR_MIN];
 
 initial begin
-    $readmemb("font_ledstrip.bin", mem);  // load char bitmaps from file
+    $readmemb("user_peripherals/ledstrip/font_ledstrip.bin", mem);  // load char bitmaps from file
 end
 
 assign data = |address[ADDR_WIDTH-1:5] ? mem[address-ADDR_MIN] : '1;
