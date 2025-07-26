@@ -141,8 +141,8 @@ module tqvp_impostor_WS2812b (
 
 
 
-    // All unused outputs to 0 (not in final integration)
-    //assign uo_out[0] = 1'b0;
-    //assign uo_out[7:2] = 6'b0;
+    // All unused outputs to 0 
+    assign uo_out[0] = 1'b0;
+    assign uo_out[7:2] = 6'b0;
 
 endmodule
