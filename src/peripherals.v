@@ -466,7 +466,7 @@ module tinyQV_peripherals (
         .data_out(data_from_simple_peri[2])
     );
 
-    tqvp_pwm_sujith pwm_sk(
+    tqvp_byte_example i_user_simple03 (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -481,7 +481,7 @@ module tinyQV_peripherals (
         .data_out(data_from_simple_peri[3])
     );
 
-    tqvp_byte_example i_user_simple04 (
+    tqvp_pwm_sujith pwm_sk(
         .clk(clk),
         .rst_n(rst_n),
 
