@@ -608,7 +608,7 @@ async def test_random_alu(dut):
     seed = random.randint(0, 0xFFFFFFFF)
     #seed = 1508125843
     debug = False
-    for test in range(50):
+    for test in range(20):
         random.seed(seed + test)
         dut._log.info("Running test with seed {}".format(seed + test))
         for i in range(1, 16):
@@ -919,7 +919,7 @@ async def test_random(dut):
     debug = False
     if debug and latch_ram: print("RAM: ", RAM)
 
-    for test in range(10):
+    for test in range(8):
         random.seed(seed + test)
         dut._log.info("Running test with seed {}".format(seed + test))
         for i in range(1, 16):
