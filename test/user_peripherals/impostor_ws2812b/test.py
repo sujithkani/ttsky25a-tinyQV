@@ -7,7 +7,7 @@ from cocotb.triggers import ClockCycles, Timer, RisingEdge
 
 from tqv import TinyQV
 
-PERIPHERAL_NUM = 16+2
+PERIPHERAL_NUM = 16+3
 
 # Generate WS2812B waveform for a single bit
 async def send_ws2812b_bit(dut, bit, clk_period_ns=15.625):
