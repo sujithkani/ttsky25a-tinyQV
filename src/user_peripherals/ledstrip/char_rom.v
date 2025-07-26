@@ -10,13 +10,9 @@ module char_rom #(
 
 reg [DATA_WIDTH-1:0] mem [0:ADDR_MAX-ADDR_MIN];
 
-// load char bitmaps from file
 initial begin
-`ifndef COCOTB_SIM
-    $readmemb("user_peripherals/ledstrip/font_ledstrip.bin", mem);
-`else
-    $readmemb("font_ledstrip.bin", mem);
-`endif
+    $readmemb("font_ledstrip.bin", mem);  // load char bitmaps from file
+
 end
     
 
