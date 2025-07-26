@@ -22,7 +22,7 @@ project:
     - "peri_full_example.v"
     - "peri_byte_example.v"
     - "user_peripherals/edge_counter.v"
-    - "user_peripherals/pwm.v"
+    - "user_peripherals/pwm_sk.v"
     - "user_peripherals/uart/peri_uart.v"
     - "user_peripherals/uart/uart_rx.v"
     - "user_peripherals/uart/uart_tx.v"
