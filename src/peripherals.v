@@ -451,7 +451,7 @@ module tinyQV_peripherals (
         .data_out(data_from_simple_peri[1])
     );
 
-    tqvp_byte_example i_user_simple02 (
+    tqvp_cattuto_ws2812b_driver i_cattuto_ws2812b_driver02 (
         .clk(clk),
         .rst_n(rst_n),
 
