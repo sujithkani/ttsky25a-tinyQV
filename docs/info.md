@@ -9,7 +9,9 @@ You can also include images in this folder and reference them in the markdown. E
 
 # How it works
 
-TinyQV is a small Risc-V SoC, implementing the RV32EC instruction set plus the Zcb and Zicond extensions, with a couple of caveats:
+This is the Tiny Tapeout collaborative competition Risc-V SoC.
+
+The CPU is a small Risc-V CPU called TinyQV, designed with the constraints of Tiny Tapeout in mind.  It implements the RV32EC instruction set plus the Zcb and Zicond extensions, with a couple of caveats:
 
 * Addresses are 28-bits
 * Program addresses are 24-bits
@@ -19,7 +21,7 @@ Instructions are read using QSPI from Flash, and a QSPI PSRAM is used for memory
 
 Code can only be executed from flash.  Data can be read from flash and RAM, and written to RAM.
 
-This version of the SoC is designed to integrate with many user peripherals.
+The peripherals making up the SoC are contributed by the Tiny Tapeout community, with prizes going to the best designs!
 
 ## Address map
 
@@ -31,8 +33,8 @@ This version of the SoC is designed to integrate with many user peripherals.
 | 0x8000000 - 0x8000033 | DEBUG  |
 | 0x8000034 - 0x800003B | TIME |
 | 0x8000040 - 0x800007F | GPIO |
-| 0x8000080 - 0x80000FF | UART (user peripherals 0-1) |
-| 0x8000100 - 0x80003FF | User peripherals 2-13 |
+| 0x8000080 - 0x80000BF | UART  |
+| 0x8000100 - 0x80003FF | User peripherals 4-15 |
 | 0x8000400 - 0x80004FF | Simple user peripherals 0-15 |
 
 ### DEBUG
