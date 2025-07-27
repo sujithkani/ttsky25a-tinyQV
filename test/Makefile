@@ -1,4 +1,14 @@
-.PHONY: all
+USER_PERIPHERALS = \
+	byte_example \
+	edge_counter \
+	pwm_sk \
+	full_example \
+	uart \
+	matt_encoder.test \
+	ledstrip.test \
+	impostor_ws2812b.test
+
+.PHONY: all $(USER_PERIPHERALS)
 
 %-results.xml:
 	make -f test_$*.mk clean
@@ -10,8 +20,10 @@ peri-%.xml:
 	MODULE=user_peripherals.$* make -f test_basic.mk
 	mv results.xml $@
 
-all: clean basic-results.xml peri-byte_example.xml peri-edge_counter.xml peri-pwm_sk.xml peri-full_example.xml prog-results.xml peri-matt_encoder.test.xml peri-ledstrip.test.xml peri-impostor_ws2812b.test.xml
+all: clean basic-results.xml prog-results.xml $(USER_PERIPHERALS:%=peri-%.xml)
 	cat *results.xml peri-*.xml > results.xml
+
+$(USER_PERIPHERALS): %: peri-%.xml
 
 clean:
 	rm *results.xml peri-*.xml || true
