@@ -7,6 +7,12 @@ You can also include images in this folder and reference them in the markdown. E
 512 kb in size, and the combined size of all images must be less than 1 MB.
 -->
 
+# LED strip driver
+
+Author: Ciro Cattuto
+
+Peripheral index: 18
+
 ## What it does
 
 Minimal WS2812B LED strip driver for TinyQV, meant for displaying debugging information.
@@ -42,4 +48,4 @@ WS2812B LED strip or Pixie Chroma matrix with DATA_IN connected to `uo_out[1]`.
 
 ## FPGA-tested
 
-![FPGA test](02_image1.jpg)
+![FPGA test](18_image1.jpg)

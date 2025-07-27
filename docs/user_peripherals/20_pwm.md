@@ -6,6 +6,12 @@ You can also include images in this folder and reference them in the markdown. E
 512 kb in size, and the combined size of all images must be less than 1 MB.
 -->
 
+# PWM
+
+Author: Sujith Kani A.
+
+Peripheral index: 20
+
 ## What it does
 
 This project implements a simple 8-bit Pulse Width Modulation (PWM) peripheral, designed as a memory-mapped device for integration with a RISC-V SoC in the TinyTapeout ecosystem.

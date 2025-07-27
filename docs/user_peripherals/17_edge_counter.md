@@ -1,3 +1,9 @@
+# Edge Counter
+
+Author: Uri Shaked
+
+Peripheral index: 17
+
 ## What it does
 
 Edge counter peripheral for TinyQV that counts the number of edges on selected ui_in pins.
