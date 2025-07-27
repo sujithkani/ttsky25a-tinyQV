@@ -189,8 +189,8 @@ module tinyQV_peripherals (
 
     // --------------------------------------------------------------------- //
     // Full interface peripherals
-
-    tqvp_full_example i_user_peri04 (
+    
+    tqvp_full_example i_user_peri04(
         .clk(clk),
         .rst_n(rst_n),
 
@@ -208,7 +208,7 @@ module tinyQV_peripherals (
 
         .user_interrupt(user_interrupts[4])
     );
-
+    
     tqvp_full_example i_user_peri05 (
         .clk(clk),
         .rst_n(rst_n),
@@ -481,7 +481,7 @@ module tinyQV_peripherals (
         .data_out(data_from_simple_peri[3])
     );
 
-    tqvp_byte_example i_user_simple04 (
+    tqvp_pwm_sujith pwm_sk(
         .clk(clk),
         .rst_n(rst_n),
 
