@@ -496,7 +496,7 @@ module tinyQV_peripherals (
         .data_out(data_from_simple_peri[4])
     );
 
-    tqvp_byte_example i_user_simple05 (
+    tqvp_matt_pwm matt_pwm (
         .clk(clk),
         .rst_n(rst_n),
 
