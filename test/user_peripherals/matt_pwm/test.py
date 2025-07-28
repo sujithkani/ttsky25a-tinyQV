@@ -11,7 +11,7 @@ from tqv import TinyQV
 # in peripherals.v.  e.g. if your design is i_user_simple00, set this to 16.
 # The peripheral number is not used by the test harness.
 PERIPHERAL_NUM = 21
-ASSERT = 0
+ASSERT = 1
 
 async def pin_change(dut, pin, value, timeout=10000):
     for i in range(timeout):
@@ -42,7 +42,7 @@ async def test_project(dut):
 
     dut._log.info("Test project behavior")
 
-    pwm_strobes = [(1, 1), (2, 2)]
+    pwm_strobes = [(0, 1), (2, 3), (5,6)]
     # Test PWM
     for pwm_strobe, clock_cycles in pwm_strobes:
         for pwm_value in [1, 10, 100, 200]:
@@ -56,7 +56,7 @@ async def test_project(dut):
             assert await tqv.read_reg(2) == pwm_strobe 
 
             # wait for at least 2 full PWM cycles to ensure everything is ready
-            await ClockCycles(dut.clk, 2*256)
+            await ClockCycles(dut.clk, 256)
             # do the test
             await test_pwm(dut, pwm_value, clock_cycles)
 
@@ -67,12 +67,14 @@ async def test_pwm(dut, pwm_value, pwm_strobe):
     await pin_change(dut, dut.uo_out[0], 1)
     await pin_change(dut, dut.uo_out[0], 0)
     await pin_change(dut, dut.uo_out[0], 1)
+    dut._log.info(f"assert {pwm_strobe * pwm_value} clocks of PWM high")
     # assert the PWM is on for the length of time
     for i in range(pwm_value):
-        if ASSERT: assert dut.uo_out[0] == 1
-        if ASSERT: assert dut.uo_out[1] == 1
+        if ASSERT: assert dut.uo_out[0] == 1, f"failed on cycle {i}"
+        if ASSERT: assert dut.uo_out[1] == 1, f"failed on cycle {i}"
         await ClockCycles(dut.clk, pwm_strobe)
+    dut._log.info(f"assert {pwm_strobe * (255 - pwm_value)} clocks of PWM low")
     for i in range(255 - pwm_value):
-        if ASSERT: assert dut.uo_out[0] == 0
-        if ASSERT: assert dut.uo_out[1] == 0
+        if ASSERT: assert dut.uo_out[0] == 0, f"failed on cycle {i}"
+        if ASSERT: assert dut.uo_out[1] == 0, f"failed on cycle {i}"
         await ClockCycles(dut.clk, pwm_strobe)

@@ -37,7 +37,7 @@ module tqvp_matt_pwm (
         if (!rst_n) begin
             pwm_0 <= 0;
             pwm_1 <= 0;
-	    strobe_period <= 1;
+	    strobe_period <= 0;
         end else begin
             if (address == 4'h0) begin
                 if (data_write) pwm_0 <= data_in;
@@ -61,7 +61,7 @@ module tqvp_matt_pwm (
                       (address == 4'h1) ? pwm_1 :
                       (address == 4'h2) ? strobe_period :
                       8'h0;    
-    // strobe gen
+    // strobe gen, generates a strobe every strobe_period + 1 clock cycles
     pwm_strobe_gen #(.WIDTH(16))  pwm_strobe_gen(.clk(clk), .cmp(strobe_period), .reset(reset), .out(pwm_strobe));
 
     // pwm gen

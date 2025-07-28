@@ -19,12 +19,12 @@ Peripheral index: 21
 
 ## What it does
 
-Dual channel 8 bit PWM generator with adjustable frequency.
+Dual channel 8 bit PWM generator with adjustable period.
 
-By default, the PWM period multiplier is set to 1. A PWM value of 10 results in the output going high for 10
-clock cycles for every 256.
-
-If the PWM period multiplier is set to 100, the same PWM value will now result in a high value for 10000 cycles out of every 256000.
+* The PWM generator will advance by one count every PWM_MULT+1 clocks.
+* The default PWM_MULT is 0.
+* With PWM_MULT as 0, a PWM0 value of 10 will result in 10 clocks high out of 256 clocks.
+* With PWM_MULT as 1, a PWM0 value of 10 will result in 20 clocks high out of 512 clocks.
 
 ## Register map
 
