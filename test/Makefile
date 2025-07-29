@@ -2,12 +2,13 @@ USER_PERIPHERALS = \
 	byte_example \
 	edge_counter \
 	pwm_sk \
+        test_spike  \
 	full_example \
 	uart \
 	matt_encoder.test \
 	ledstrip.test \
 	impostor_ws2812b.test \
-	matt_pwm.test
+	matt_pwm.test 
 
 .PHONY: all $(USER_PERIPHERALS)
 
