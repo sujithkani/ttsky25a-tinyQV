@@ -41,6 +41,7 @@ project:
     - "user_peripherals/matt_pwm/matt_pwm.v"
     - "user_peripherals/matt_pwm/pwm_strobe_gen.v"
     - "user_peripherals/matt_pwm/pwm.v"
+    - "user_peripherals/spike.v"
     - "tinyQV/cpu/tinyqv.v"
     - "tinyQV/cpu/alu.v"
     - "tinyQV/cpu/core.v"
