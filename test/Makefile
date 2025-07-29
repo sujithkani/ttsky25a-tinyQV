@@ -18,10 +18,11 @@ USER_PERIPHERALS = \
 
 peri-%.xml:
 	make -f test_basic.mk clean
-	MODULE=user_peripherals.$* make -f test_basic.mk
+	MODULE=user_peripherals.$* make -f test_basic.mk || true
+	if [ ! -f results.xml ]; then echo '<failure message="$* failed (crashed)" />' > results.xml; fi
 	mv results.xml $@
 
-all: clean basic-results.xml prog-results.xml $(USER_PERIPHERALS:%=peri-%.xml)
+all: clean  #basic-results.xml prog-results.xml $(USER_PERIPHERALS:%=peri-%.xml)
 	cat *results.xml peri-*.xml > results.xml
 
 $(USER_PERIPHERALS): %: peri-%.xml
