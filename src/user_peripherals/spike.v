@@ -1,6 +1,6 @@
 `default_nettype none
 
-module spike (
+module tqvp_spike (
   input wire clk,
   input wire rst_n,
 
