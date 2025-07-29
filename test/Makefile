@@ -6,7 +6,8 @@ USER_PERIPHERALS = \
 	uart \
 	matt_encoder.test \
 	ledstrip.test \
-	impostor_ws2812b.test
+	impostor_ws2812b.test \
+	matt_pwm.test
 
 .PHONY: all $(USER_PERIPHERALS)
 
