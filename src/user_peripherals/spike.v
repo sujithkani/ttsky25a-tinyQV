@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2025 Riya and Anoushka
+ * SPDX-License-Identifier: Apache-2.0
+ */
 `default_nettype none
 
 module tqvp_spike (
