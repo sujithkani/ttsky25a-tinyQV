@@ -496,7 +496,7 @@ module tinyQV_peripherals (
         .data_out(data_from_simple_peri[4])
     );
 
-    tqvp_spike spike (
+    tqvp_spike spike(
         .clk(clk),
         .rst_n(rst_n),
 
