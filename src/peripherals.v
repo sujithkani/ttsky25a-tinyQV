@@ -498,10 +498,8 @@ module tinyQV_peripherals (
 
 
     tqvp_spike spike(
-
         .clk(clk),
         .rst_n(rst_n),
-
         .ui_in(ui_in),
         .uo_out(uo_out_from_simple_peri[5]),
 
