@@ -4,7 +4,7 @@
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
-
+PERIPHERAL_NUM = 16+5
 from tqv import TinyQV
 
 @cocotb.test()
@@ -16,7 +16,7 @@ async def test_spike_harness(dut):
     cocotb.start_soon(clock.start())
 
     # 2. Initialize TinyQV helper
-    tqv = TinyQV(dut)
+    tqv = TinyQV(dut,PERIPHERAL_NUM)
 
     # 3. Reset DUT
     await tqv.reset()
