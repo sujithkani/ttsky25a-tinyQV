@@ -7,6 +7,12 @@ You can also include images in this folder and reference them in the markdown. E
 512 KB in size, and the combined size of all images must be less than 1 MB.
 -->
 
+# Spike_Encoder Pheriphral
+
+Author: Riya & Anoushka 
+
+Peripheral index: 22
+
 ## What it does
 
 This peripheral implements a spike encoder that detects rapid changes in pixel intensity values.
