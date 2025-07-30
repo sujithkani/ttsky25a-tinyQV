@@ -524,21 +524,7 @@ module tinyQV_peripherals (
 
         .data_out(data_from_simple_peri[6])
     );
-
-    tqvp_byte_example i_user_simple06 (
-        .clk(clk),
-        .rst_n(rst_n),
-
-        .ui_in(ui_in),
-        .uo_out(uo_out_from_simple_peri[6]),
-
-        .address(addr_in[3:0]),
-
-        .data_write((data_write_n != 2'b11) & peri_simple[6]),
-        .data_in(data_in[7:0]),
-
-        .data_out(data_from_simple_peri[6])
-    );
+    
 
     tqvp_byte_example i_user_simple07 (
         .clk(clk),
