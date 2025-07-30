@@ -7,7 +7,8 @@ USER_PERIPHERALS = \
 	matt_encoder.test \
 	ledstrip.test \
 	impostor_ws2812b.test \
-	matt_pwm.test
+	matt_pwm.test \
+        test_spike  \
 
 .PHONY: all $(USER_PERIPHERALS)
 
