@@ -209,7 +209,7 @@ module tinyQV_peripherals (
         .user_interrupt(user_interrupts[4])
     );
 
-    tqvp_full_example i_user_peri05 (
+    tqvp_htfab_baby_vga i_user_peri05 (
         .clk(clk),
         .rst_n(rst_n),
 
