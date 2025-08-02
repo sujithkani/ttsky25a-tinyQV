@@ -21,7 +21,7 @@ project:
     - "peripherals.v"
     - "peri_full_example.v"
     - "peri_byte_example.v"
-    - "user_peripherals/tqvp_dsatizabal_fpu.v"
+    - "user_peripherals/tqvp_dsatizabal_fpu.sv"
     - "user_peripherals/fpu/fpu_add.v"
     - "user_peripherals/fpu/fpu_mult.v"
     - "user_peripherals/edge_counter.v"
