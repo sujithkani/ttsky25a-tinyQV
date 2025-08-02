@@ -222,7 +222,7 @@ async def test_timer(dut):
     await start_read(dut, 0)
 
     # Read time
-    await send_instr(dut, InstructionLW(x1, tp, 0x34).encode())
+    await send_instr(dut, InstructionLW(x1, x0, -0x100).encode())
     assert await read_reg(dut, x1) <= 1
 
     start_nops(dut)
@@ -230,15 +230,15 @@ async def test_timer(dut):
     await stop_nops()
 
     # Read time
-    await send_instr(dut, InstructionLW(x1, tp, 0x34).encode())
+    await send_instr(dut, InstructionLW(x1, x0, -0x100).encode())
     assert 6 <= await read_reg(dut, x1) <= 8
 
     # Set timecmp
     await send_instr(dut, InstructionADDI(x1, x0, 20).encode())
-    await send_instr(dut, InstructionSW(tp, x1, 0x38).encode())
+    await send_instr(dut, InstructionSW(x0, x1, -0xfc).encode())
 
     # And read back
-    await send_instr(dut, InstructionLW(a0, tp, 0x38).encode())
+    await send_instr(dut, InstructionLW(a0, x0, -0xfc).encode())
     assert await read_reg(dut, a0) == 20
 
     # Enable timer interrupt

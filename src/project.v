@@ -22,8 +22,6 @@ module tt_um_tt_tinyQV (
     localparam PERI_DEBUG_UART = 4'h6;
     localparam PERI_DEBUG_UART_STATUS = 4'h7;
     localparam PERI_DEBUG = 4'hC;
-    localparam PERI_MTIME = 4'hD;
-    localparam PERI_MTIMECMP = 4'hE;
     localparam PERI_USER = 4'hF;
 
     // Register the reset on the negative edge of clock for safety.
@@ -84,9 +82,8 @@ module tt_um_tt_tinyQV (
     wire debug_uart_tx_busy;
     wire debug_uart_tx_start = write_n != 2'b11 && connect_peripheral == PERI_DEBUG_UART;
 
-    // MTIME
-    wire [31:0] mtime_data;
-    wire timer_interrupt;
+    // Time
+    wire time_pulse;
 
     // Peripherals interface
     wire [7:0] peri_out;
@@ -119,7 +116,7 @@ module tt_um_tt_tinyQV (
         .data_in(data_from_read),
 
         .interrupt_req(interrupt_req),
-        .timer_interrupt(timer_interrupt),
+        .time_pulse(time_pulse),
 
         .spi_data_in(qspi_data_in),
         .spi_data_out(qspi_data_out),
@@ -190,8 +187,6 @@ module tt_um_tt_tinyQV (
         case (connect_peripheral)
             PERI_GPIO_OUT_SEL:data_from_read = {24'h0, gpio_out_sel, 6'h0};
             PERI_DEBUG_UART_STATUS: data_from_read = {31'h0, debug_uart_tx_busy};
-            PERI_MTIME:       data_from_read = mtime_data;
-            PERI_MTIMECMP:    data_from_read = mtime_data;
             PERI_USER:        data_from_read = peri_data_out;
             default:          data_from_read = 32'hFFFF_FFFF;
         endcase
@@ -219,21 +214,6 @@ module tt_um_tt_tinyQV (
     );
 
     reg [5:0] time_count;
-    tinyQV_time i_time(
-        .clk(clk),
-        .rstn(rst_reg_n),
-
-        .time_pulse(time_count == 6'h3F),
-
-        .set_mtime(connect_peripheral == PERI_MTIME && write_n == 2'b10),
-        .set_mtimecmp(connect_peripheral == PERI_MTIMECMP && write_n == 2'b10),
-        .data_in(data_to_write),
-
-        .read_mtimecmp(connect_peripheral == PERI_MTIMECMP),
-        .data_out(mtime_data),
-
-        .timer_interrupt(timer_interrupt)
-    );
     always @(posedge clk) begin
         if (!rst_reg_n) begin
             time_count <= 0;
@@ -241,6 +221,7 @@ module tt_um_tt_tinyQV (
             time_count <= time_count + 1;
         end
     end
+    assign time_pulse = time_count == 6'h3f;
 
     // Debug
     always @(posedge clk) begin
