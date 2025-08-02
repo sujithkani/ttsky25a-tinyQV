@@ -10,6 +10,7 @@ USER_PERIPHERALS = \
 	matt_pwm.test \
     test_spike  \
 	fpu.test \
+	baby_vga.test \
 
 .PHONY: all $(USER_PERIPHERALS)
 
