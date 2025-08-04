@@ -256,6 +256,29 @@ async def test_timer(dut):
     assert await read_reg(dut, a0) == 0x80000007
 
 @cocotb.test()
+async def test_csr(dut):
+    dut._log.info("Start")
+    
+    clock = Clock(dut.clk, 15.624, units="ns")
+    cocotb.start_soon(clock.start())
+
+    # Reset
+    await reset(dut, 1, 0x3)
+    
+    # Should start reading flash after 1 cycle
+    await ClockCycles(dut.clk, 1)
+    await start_read(dut, 0)
+
+    # Disable interrupts and read current value of register
+    await send_instr(dut, InstructionADDI(a3, x0, 8).encode())
+    await send_instr(dut, InstructionCSRRC(a3, a3, csrnames.mstatus).encode())
+    assert await read_reg(dut, a3) == 0xC
+
+    # Reenable interrupts
+    await send_instr(dut, InstructionCSRRS(a3, a3, csrnames.mstatus).encode())
+    assert await read_reg(dut, a3) == 0x4
+
+@cocotb.test()
 async def test_debug_reg(dut):
   dut._log.info("Start")
   
