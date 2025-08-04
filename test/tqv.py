@@ -109,7 +109,7 @@ class TinyQV:
         await test_util.stop_nops()
 
         # Prepare value for LUI + ADDI
-        value_upper = (value + 0x800) >> 12
+        value_upper = ((value + 0x800) >> 12) & 0xfffff
         value_lower = value & 0xfff
         if value_lower >= 0x800:
             value_lower -= 0x1000
