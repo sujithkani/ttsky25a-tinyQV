@@ -40,7 +40,7 @@ async def idle_line(dut, us=60):
 
 
 @cocotb.test()
-async def test_project(dut):
+async def tests64Mhz(dut):
     dut._log.info("Start test 64Mhz")
 
     #clock = Clock(dut.clk, 15.625, units="ns")  # 64MHz clock
@@ -177,7 +177,7 @@ async def test_project(dut):
 
 
 @cocotb.test()
-async def test_project24(dut):
+async def tests24Mhz(dut):
     dut._log.info("Start test 24Mhz")
 
     clock = Clock(dut.clk, 42, units="ns")  # =23.809523809524 MHz, close enough to 24 MHz for test
@@ -191,14 +191,14 @@ async def test_project24(dut):
     # -----------------------------------------
     dut._log.info("Configuring shadow prescaler registers...")
 
-    # Set idle_ticks = (42/16)*3840=10080 = 0x00002760
-    await tqv.write_reg(0x06, 0x60)  # LSB
-    await tqv.write_reg(0x07, 0x27)
+    # Set idle_ticks = (16/42)*3840=1463 = 0x000005B7
+    await tqv.write_reg(0x06, 0xb7)  # LSB
+    await tqv.write_reg(0x07, 0x05)
     await tqv.write_reg(0x08, 0x00)
     await tqv.write_reg(0x09, 0x00)
 
-    # Set threshold_cycles = (42/16)*38= 100 = 0x00000064
-    await tqv.write_reg(0x0A, 0x64)  # LSB
+    # Set threshold_cycles = (16/42)*38= 15 = 0x0000000F
+    await tqv.write_reg(0x0A, 0x0F)  # LSB
     await tqv.write_reg(0x0B, 0x00)
     await tqv.write_reg(0x0C, 0x00)
     await tqv.write_reg(0x0D, 0x00)
@@ -212,7 +212,7 @@ async def test_project24(dut):
     # -----------------------------------------
     dut._log.info("Configuring DIn to be ui_[2]...")
 
-    # Set din to pin 1
+    # Set din to pin 2
     await tqv.write_reg(0xE, 0x02)  # LSB
 
     # -----------------------------------------
