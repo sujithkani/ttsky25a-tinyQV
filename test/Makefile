@@ -19,12 +19,16 @@ USER_PERIPHERALS = \
 	make -f test_$*.mk clean
 	make -f test_$*.mk
 	mv results.xml $@
+	mv sim_build/rtl/tb.fst $*-rtl.fst || true
+	mv sim_build/gl/tb.fst $*-gl.fst || true
 
 peri-%.xml:
 	make -f test_basic.mk clean
 	MODULE=user_peripherals.$* make -f test_basic.mk || true
 	if [ ! -f results.xml ]; then echo '<failure message="$* failed (crashed)" />' > results.xml; fi
 	mv results.xml $@
+	mv sim_build/rtl/tb.fst $*-rtl.fst || true
+	mv sim_build/gl/tb.fst $*-gl.fst || true
 
 all: clean basic-results.xml prog-results.xml $(USER_PERIPHERALS:%=peri-%.xml)
 	cat *results.xml peri-*.xml > results.xml
@@ -32,4 +36,4 @@ all: clean basic-results.xml prog-results.xml $(USER_PERIPHERALS:%=peri-%.xml)
 $(USER_PERIPHERALS): %: peri-%.xml
 
 clean:
-	rm *results.xml peri-*.xml || true
+	rm *results.xml peri-*.xml *.fst sim_build/rtl/tb.fst sim_build/gl/tb.fst || true

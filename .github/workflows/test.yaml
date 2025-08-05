@@ -43,5 +43,5 @@ jobs:
         with:
           name: test-vcd
           path: |
-            test/sim_build/rtl/*.fst
+            test/*.fst
             test/results.xml
