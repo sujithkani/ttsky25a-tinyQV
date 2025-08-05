@@ -145,7 +145,6 @@ async def test_project(dut):
 
     # Check that registers have been cleared (due to reset)
     assert int(await tqv.read_reg(0)) == 0x34  # Still holds, unless you clear manually in RTL
-    # You could modify RTL to clear on idle if desired
 
     #SEND AGAIN AFTER IDLE
     # Send 3 bytes for RGB (G=0x12, R=0x34, B=0x56)
