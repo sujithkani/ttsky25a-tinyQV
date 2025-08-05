@@ -411,9 +411,9 @@ async def tests8MhzWithInputsRoulete(dut):
 
     #SEND AGAIN AFTER IDLE
     # Send 3 bytes for RGB
-    await send_ws2812b_byte(dut, 0xea,125,8)
-    await send_ws2812b_byte(dut, 0xae,125,8)
-    await send_ws2812b_byte(dut, 0x12,125,8)
+    await send_ws2812b_byte(dut, 0xea,125,7)
+    await send_ws2812b_byte(dut, 0xae,125,7)
+    await send_ws2812b_byte(dut, 0x12,125,7)
 
     # Wait for RGB to be latched
     await ClockCycles(dut.clk, 10)
