@@ -183,8 +183,8 @@ The unit tests are hand written tests using the cocotb test framework, covering 
 
 To run the tests, from inside the Docker container, run
 ```sh
-cd /path/to/tinyqv-dwarf-peripheral/test
-make -B
+cd /path/to/ttsky25a-tinyQV/test
+make -B tqvp_laurie_dwarf_line_table_accelerator.test
 ```
 
 ### RIS tests
