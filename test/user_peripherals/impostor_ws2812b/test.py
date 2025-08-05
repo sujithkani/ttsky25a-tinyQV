@@ -334,10 +334,10 @@ async def tests8MhzWithInputsRoulete(dut):
 
     # Commit new prescaler values
     await tqv.write_reg(0x05, 0xFF)
-    await ClockCycles(dut.clk, 1)
+    await ClockCycles(dut.clk, 5)
 
     for i in range(8): 
-        dut._log.info("Configuring DIn to be ui_[{i}]...")
+        dut._log.info(f"Configuring DIn to be ui_[{i}]...")
         # -----------------------------------------
         # Configure DIN pin
         # -----------------------------------------
@@ -353,10 +353,10 @@ async def tests8MhzWithInputsRoulete(dut):
         dut._log.info("Reading rgb_ready is OFF")
         dut._log.info("Sending 3 bytes (G, R, B)")
 
-        # Send 3 bytes for RGB (G=0x12, R=0x34, B=0x56)
-        await send_ws2812b_byte(dut, 0x12,125,i)#g
-        await send_ws2812b_byte(dut, 0x34,125,i)#r
-        await send_ws2812b_byte(dut, 0x56,125,i)#b
+        # Send 3 bytes for RGB 
+        await send_ws2812b_byte(dut, i+1    ,125,i)#g
+        await send_ws2812b_byte(dut, i      ,125,i)#r
+        await send_ws2812b_byte(dut, i+2    ,125,i)#b
 
         # Wait for RGB to be latched
         await ClockCycles(dut.clk, 5)
@@ -374,9 +374,9 @@ async def tests8MhzWithInputsRoulete(dut):
         b = int(await tqv.read_reg(2))
 
         dut._log.info(f"Read RGB = ({r:02X}, {g:02X}, {b:02X})")
-        assert r == 0x34
-        assert g == 0x12
-        assert b == 0x56
+        assert r == i
+        assert g == i+1
+        assert b == i+2
 
         # Now send THREE extra byteS and confirm bits get forwarded and not detected
         dut._log.info("Testing bit forwarding to DOUT")
@@ -399,7 +399,7 @@ async def tests8MhzWithInputsRoulete(dut):
         # Check that uo_out[x] has toggled (forwarding is happening)
         # Note: due to pipelining, you may not catch exact bits — we just assert activity,
         for i in range(8):
-            dut._log.info("Checking activity on uo_[{i}]")
+            dut._log.info(f"Checking activity on uo_[{i}]")
             dout_activity = int(dut.uo_out.value) & (1 << i)
             assert dout_activity in [0, 1]
 
@@ -408,9 +408,6 @@ async def tests8MhzWithInputsRoulete(dut):
         await idle_line(dut)
 
     await ClockCycles(dut.clk, 10)
-
-    # Check that registers have been cleared (due to reset)
-    assert int(await tqv.read_reg(0)) == 0x34  # Still holds, unless you clear manually in RTL
 
     #SEND AGAIN AFTER IDLE
     # Send 3 bytes for RGB
