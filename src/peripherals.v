@@ -27,7 +27,7 @@ module tinyQV_peripherals (
     // Data read and write requests from the TinyQV core.
     input [1:0]   data_write_n, // 11 = no write, 00 = 8-bits, 01 = 16-bits, 10 = 32-bits
     input [1:0]   data_read_n,  // 11 = no read,  00 = 8-bits, 01 = 16-bits, 10 = 32-bits
-    
+
     output [31:0] data_out,     // Data out from the peripheral, bottom 8, 16 or all 32 bits are valid on read when data_ready is high.
     output        data_ready,
 
@@ -62,8 +62,8 @@ module tinyQV_peripherals (
     assign uo_out = uo_out_comb;
 
     // Register the data output from the peripheral.  This improves timing and
-    // also simplifies the peripheral interface (no need for the peripheral to care 
-    // about holding data_out until data_read_complete - it looks like it is read 
+    // also simplifies the peripheral interface (no need for the peripheral to care
+    // about holding data_out until data_read_complete - it looks like it is read
     // synchronously).
     always @(posedge clk) begin
         if (!rst_n) begin
@@ -156,7 +156,7 @@ module tinyQV_peripherals (
                 end else begin
                     uo_out_comb[i] = uo_out_from_user_peri[gpio_out_func_sel[i][3:0]][i];
                 end
-            end            
+            end
         end
     endgenerate
 
@@ -228,7 +228,7 @@ module tinyQV_peripherals (
         .user_interrupt(user_interrupts[5])
     );
 
-    tqvp_full_example i_user_peri06 (
+    tqvp_nkanderson_wdt i_user_peri06 (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -511,7 +511,7 @@ module tinyQV_peripherals (
 
         .data_out(data_from_simple_peri[5])
     );
-    
+
     tqvp_spike spike(
         .clk(clk),
         .rst_n(rst_n),
@@ -525,7 +525,7 @@ module tinyQV_peripherals (
 
         .data_out(data_from_simple_peri[6])
     );
-    
+
 
     tqvp_byte_example i_user_simple07 (
         .clk(clk),
