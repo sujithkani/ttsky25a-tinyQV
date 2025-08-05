@@ -50,7 +50,7 @@ module tqvp_impostor_WS2812b (
     ws2812b_pulse_decoder decoder (
         .clk(clk),
         .reset(reset),
-        .din(ui_in[1]),
+        .din(din),
         .threshold_cycles(reg_threshold_cycles),
         .bit_valid(bit_valid),
         .bit_value(bit_value)
@@ -69,7 +69,7 @@ module tqvp_impostor_WS2812b (
     ws2812b_idle_detector idle_detector (
         .clk(clk),
         .reset(reset),
-        .din(ui_in[1]),
+        .din(din),
         .idle_threshold_ticks(reg_idle_ticks),
         .idle(idle)
     );
@@ -78,12 +78,12 @@ module tqvp_impostor_WS2812b (
     ws2812b_demux demux (
         .clk(clk),
         .reset(reset),
-        .din_raw(ui_in[1]),
+        .din_raw(din),
         .bit_valid(bit_valid),
         .bit_value(bit_value),
         .byte_valid(byte_valid),
         .idle(idle),
-        .dout(uo_out[1]),
+        .dout(dout_signal),
         .rgb_ready(rgb_ready_pulse)
     );
 
@@ -185,12 +185,24 @@ module tqvp_impostor_WS2812b (
         end
     end
 
+// ------------------------------------
+// Din pin configuration registers
+// ------------------------------------
+reg [2:0] reg_din_select;
+wire din = ui_in[reg_din_select];
+
+always @(posedge clk) begin
+    if (reset) begin
+        reg_din_select <= 3'd1;  // Default DIN = ui_in[1]
+    end else if (data_write && address == 4'h10) begin
+        reg_din_select <= data_in[2:0]; // Only use lower 3 bits
+    end
+end
 
 
+//replicateDOUT on all outputs, this way the tiniQV is able to choose
+wire dout_signal;
+assign uo_out = {8{dout_signal}};
 
-
-    // All unused outputs to 0 
-    assign uo_out[0] = 1'b0;
-    assign uo_out[7:2] = 6'b0;
 
 endmodule
