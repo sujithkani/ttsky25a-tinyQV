@@ -305,7 +305,7 @@ async def tests24Mhz(dut):
 
 
 
-    @cocotb.test()
+@cocotb.test()
 async def tests8MhzWithInputsRoulete(dut):
     dut._log.info("Start test 8Mhz")
 
