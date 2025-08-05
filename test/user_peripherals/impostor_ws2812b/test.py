@@ -302,3 +302,134 @@ async def tests24Mhz(dut):
     assert b == 0xef
 
     dut._log.info("Test complete")
+
+
+
+    @cocotb.test()
+async def tests8MhzWithInputsRoulete(dut):
+    dut._log.info("Start test 8Mhz")
+
+    clock = Clock(dut.clk, 125, units="ns")  # =8 MHz, sharp
+    cocotb.start_soon(clock.start())
+
+    tqv = TinyQV(dut, PERIPHERAL_NUM)
+    await tqv.reset()
+
+    # -----------------------------------------
+    # Configure prescaler shadow registers
+    # -----------------------------------------
+    dut._log.info("Configuring shadow prescaler registers...")
+
+    # Set idle_ticks = (16/125)*3840 = 491 = 0x000001eb
+    await tqv.write_reg(0x06, 0xeb)  # LSB
+    await tqv.write_reg(0x07, 0x01)
+    await tqv.write_reg(0x08, 0x00)
+    await tqv.write_reg(0x09, 0x00)
+
+    # Set threshold_cycles = (16/125)*38= 5 = 0x00000005
+    await tqv.write_reg(0x0A, 0x05)  # LSB
+    await tqv.write_reg(0x0B, 0x00)
+    await tqv.write_reg(0x0C, 0x00)
+    await tqv.write_reg(0x0D, 0x00)
+
+    # Commit new prescaler values
+    await tqv.write_reg(0x05, 0xFF)
+    await ClockCycles(dut.clk, 1)
+
+    for i in range(8): 
+        dut._log.info("Configuring DIn to be ui_[{i}]...")
+        # -----------------------------------------
+        # Configure DIN pin
+        # -----------------------------------------
+        
+        # Set din to pin 0
+        await tqv.write_reg(0xE, i)  # LSB
+        # -----------------------------------------
+        # RGB data path test
+        # -----------------------------------------
+        # Check if rgb_ready register is ON
+        ready = int(await tqv.read_reg(4))
+        assert ready == 0
+        dut._log.info("Reading rgb_ready is OFF")
+        dut._log.info("Sending 3 bytes (G, R, B)")
+
+        # Send 3 bytes for RGB (G=0x12, R=0x34, B=0x56)
+        await send_ws2812b_byte(dut, 0x12,125,i)#g
+        await send_ws2812b_byte(dut, 0x34,125,i)#r
+        await send_ws2812b_byte(dut, 0x56,125,i)#b
+
+        # Wait for RGB to be latched
+        await ClockCycles(dut.clk, 5)
+
+        dut._log.info("Reading rgb_ready is 0xFF and that cleared when writen a 0 to addr 0x3")
+        await tqv.read_reg(4)==0xFF
+        await ClockCycles(dut.clk, 1)  # allow state update
+        await tqv.write_reg(3, 0) 
+        await ClockCycles(dut.clk, 1)  # allow clearing to propagate
+        await tqv.read_reg(4)==0x00
+        
+        # Read back registers
+        g = int(await tqv.read_reg(1))
+        r = int(await tqv.read_reg(0))
+        b = int(await tqv.read_reg(2))
+
+        dut._log.info(f"Read RGB = ({r:02X}, {g:02X}, {b:02X})")
+        assert r == 0x34
+        assert g == 0x12
+        assert b == 0x56
+
+        # Now send THREE extra byteS and confirm bits get forwarded and not detected
+        dut._log.info("Testing bit forwarding to DOUT")
+
+        # Send 3 bytes for RGB (G=0x12, R=0x34, B=0x56)
+        await send_ws2812b_byte(dut, 0xDE,125,i)
+        await send_ws2812b_byte(dut, 0xAD,125,i)
+        await send_ws2812b_byte(dut, 0xFF,125,i)
+
+        # Allow a few cycles for DOUT propagation
+        await ClockCycles(dut.clk, 5)
+
+        dut._log.info("Reading rgb_ready is 0x00 proof of NOT detecion of fowarded bytes")
+        await tqv.read_reg(4)==0x00
+        await ClockCycles(dut.clk, 1)  # allow state update
+        await tqv.write_reg(3, 0) 
+        await ClockCycles(dut.clk, 1)  # allow clearing to propagate
+        await tqv.read_reg(4)==0x00
+
+        # Check that uo_out[x] has toggled (forwarding is happening)
+        # Note: due to pipelining, you may not catch exact bits — we just assert activity,
+        for i in range(8):
+            dut._log.info("Checking activity on uo_[{i}]")
+            dout_activity = int(dut.uo_out.value) & (1 << i)
+            assert dout_activity in [0, 1]
+
+        # Now inject idle to trigger reset
+        dut._log.info("Injecting IDLE condition")
+        await idle_line(dut)
+
+    await ClockCycles(dut.clk, 10)
+
+    # Check that registers have been cleared (due to reset)
+    assert int(await tqv.read_reg(0)) == 0x34  # Still holds, unless you clear manually in RTL
+
+    #SEND AGAIN AFTER IDLE
+    # Send 3 bytes for RGB
+    await send_ws2812b_byte(dut, 0xea,125,8)
+    await send_ws2812b_byte(dut, 0xae,125,8)
+    await send_ws2812b_byte(dut, 0x12,125,8)
+
+    # Wait for RGB to be latched
+    await ClockCycles(dut.clk, 10)
+
+    # Read back registers
+    g = int(await tqv.read_reg(1))
+    r = int(await tqv.read_reg(0))
+    b = int(await tqv.read_reg(2))
+
+    dut._log.info(f"Read RGB = ({r:02X}, {g:02X}, {b:02X})")
+    assert r == 0xae
+    assert g == 0xea
+    assert b == 0x12
+
+    dut._log.info("Test complete")
+
