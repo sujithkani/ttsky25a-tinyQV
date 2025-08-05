@@ -37,26 +37,26 @@ Each state also has an independent 16-input mux (4-bits from STEW) driving a 1-i
 In larger PRISM implementations, each state has "dual-compare" with two N-bit LUTs which allows jumping to one of two possible states.  Due to size restrictions, this peripheral does not include dual-compare.  Instead the PRISM implementation has (in each state's STEW), a single "increment state" bit.  In any state where this bit is set and the LUT output is FALSE (i.e no jump), then the state will increment to the next state, and the "starting state" of the first occurance of this will be saved.  Then each successive state can test a different set of inputs to jump to different states.  When a state is encountered without the 'inc' bit set, PRISM will loop back to the "starting state" and loop through that set of states until the first TRUE from a LUT, clearing the loop.
 
 TL/DR:
-  1. Load a Chroma defining the FSM and enable PRISM
-  2. State starts at zero
-  3. Each state chooses up to 3 of 16 inputs via config bits
-  4. 2-input LUT decides if "jump to defined state" occurs
-  5. Increment bit decides if "state looping" is in effect
-  6. State looping ends when first LUT jump occurs
-  7. Outputs bits from STEW for "non-jump" and "transitional jump"
-  8. One conditional output based on single selected input per state
+  1. Load a Chroma defining the FSM and enable PRISM.
+  2. State starts at zero.
+  3. Each state chooses up to 3 of 16 inputs via config bits.
+  4. 2-input LUT decides if "jump to defined state" occurs.
+  5. Increment bit decides if "state looping" is in effect.
+  6. State looping ends when first LUT jump occurs.
+  7. Outputs bits from STEW for "non-jump" and "transitional jump".
+  8. One conditional output based on single selected input per state.
 
 ## Peripherals
 
 The PRISM Peripheral has, itself, peripherals.  Those are:
-  1. 8-Bit communication shift register (left or right)
+  1. 8-Bit communication shift register (left or right).
   2. 8-Bit count up/down register with compare (dedicated compare reg or comm register).
-  3. 24-bit register: Count down with zero detect, shift left / right or 3-byte FIFO
-  4. 5-bit Shift bit counter (automatic)
-  5. Input shift data source selection
-  6. Output shift data destination selection
-  7. Conditional output destination selection
-  8. Controllable latched inputs (2-bits)
+  3. 24-bit register: Count down with zero detect, shift left / right or 3-byte FIFO.
+  4. 5-bit Shift bit counter (automatic).
+  5. Input shift data source selection.
+  6. Output shift data destination selection.
+  7. Conditional output destination selection.
+  8. Controllable latched inputs (2-bits).
 
 ## Chroma
 
@@ -240,23 +240,23 @@ Byte-mode access of the RX FIFO status.
 
 ## How to test
 
-1.  First define a Chroma FSM transitions, inputs and outputs.
-2.  Write Verilog to describe your FSM in Mealy format.
-3.  Specify the Control Word Mux and options bit settings in the Verilog:
-    shift_en:    Enable shifter mode in either comm_data or 24-bit count1
-    shift_24_en: Specify if shift is comm_data or count1
-    shift_dir:   Set left or right shift direction
-    fifo_24:     Use 24-bit count1 as RX FIFO
+ -  First define a Chroma (1) wth FSM transitions, inputs and outputs.
+ -  Write Verilog to describe your FSM in Mealy format.
+ -  Specify the Control Word Mux and options bit settings in the Verilog:
+    shift_en:    Enable shifter mode in either comm_data or 24-bit count1.
+    shift_24_en: Specify if shift is comm_data or count1.
+    shift_dir:   Set left or right shift direction.
+    fifo_24:     Use 24-bit count1 as RX FIFO.
     etc.
-4.  Clone and build the custom Yosys fork for generating PRISM bitstreams.  (2)
-5.  Generate your chroma bitstream using the PRISM Yosys version. (3)
-6.  Copy the generated chroma and ctrl_reg value from either the .py or .c file.
-7.  Pass the chroma and ctrl_reg value to the "load_chroma" function.
-8.  The chroma should start running immediately.
+ -  Clone and build the custom Yosys fork for generating PRISM bitstreams.  (2)
+ -  Generate your chroma bitstream using the PRISM Yosys version. (3)
+ -  Copy the generated chroma and ctrl_reg value from either the .py or .c file.
+ -  Pass the chroma and ctrl_reg value to the "load_chroma" function.
+ -  The chroma should start running immediately.
 
-  (1) See examples in chromas directory.
-  (2) The Makefile in the chromas directory has a 'make yosys' target for cloning and building this from github sources.
-  (3) If you put your chroma in the 'chromas' directory and follow the naming convention, simply typing 'make' within that directory will build your chroma.  Results appear in the 'output' directory.
+ 1. See examples in chromas directory.
+ 2. The Makefile in the chromas directory has a 'make yosys' target for cloning and building this from github sources.
+ 3. If you put your chroma in the 'chromas' directory and follow the naming convention, simply typing 'make' within that directory will build your chroma.  Results appear in the 'output' directory.
 
  - https://github.com/kdp1965/tinyqv-prism-lite/tree/main/chromas
  - https://github.com/kdp1965/yosys-prism
