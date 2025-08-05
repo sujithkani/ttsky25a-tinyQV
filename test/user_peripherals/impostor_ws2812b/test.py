@@ -28,7 +28,7 @@ async def send_ws2812b_bit(dut, bit, clk_period_ns=15.625,DINindex=1):
 async def send_ws2812b_byte(dut, byte, clk_period_ns=15.625, DINindex=1):
     for i in range(8):
         bit = (byte >> (7 - i)) & 1
-        await send_ws2812b_bit(dut, bit)
+        await send_ws2812b_bit(dut, bit,clk_period_ns, DINindex)
     # Inter-bit spacing is not required but can help simulate reality
     await Timer(200, units='ns')
 
