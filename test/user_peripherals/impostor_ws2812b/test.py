@@ -72,6 +72,14 @@ async def test_project(dut):
     await ClockCycles(dut.clk, 1)
 
     # -----------------------------------------
+    # Configure DIN pin
+    # -----------------------------------------
+    dut._log.info("Configuring DIn to be ui_[1]...")
+
+    # Set din to pin 1
+    await tqv.write_reg(0x10, 0x01)  # LSB
+
+    # -----------------------------------------
     # RGB data path test
     # -----------------------------------------
     # Check if rgb?ready register is ON
