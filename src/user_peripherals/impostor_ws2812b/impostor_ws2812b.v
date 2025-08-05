@@ -47,16 +47,15 @@ module tqvp_impostor_WS2812b (
     // ------------------------------
     // Instantiate modules
     // ------------------------------
-    ws2812b_pulse_decoder #(
-        .CLK_HZ(64000000),
-        .THRESHOLD_CYCLES(38)
-    ) decoder (
+    ws2812b_pulse_decoder decoder (
         .clk(clk),
         .reset(reset),
         .din(ui_in[1]),
+        .threshold_cycles(reg_threshold_cycles),
         .bit_valid(bit_valid),
         .bit_value(bit_value)
     );
+
 
     ws2812b_byte_assembler byte_assembler (
         .clk(clk),
@@ -67,15 +66,14 @@ module tqvp_impostor_WS2812b (
         .byte_data(byte_data)
     );
 
-    ws2812b_idle_detector #(
-        .CLK_HZ(64000000),
-        .IDLE_US(60)
-    ) idle_detector (
+    ws2812b_idle_detector idle_detector (
         .clk(clk),
         .reset(reset),
         .din(ui_in[1]),
+        .idle_threshold_ticks(reg_idle_ticks),
         .idle(idle)
     );
+
 
     ws2812b_demux demux (
         .clk(clk),
@@ -137,6 +135,56 @@ module tqvp_impostor_WS2812b (
                 rgb_ready <= 0;
         end
     end
+
+    // ------------------------------------
+    // Clock Configuration registers (prescalers)
+    // ------------------------------------
+    reg [31:0] reg_threshold_cycles;
+    reg [31:0] reg_idle_ticks;
+    reg [31:0] shadow_threshold_cycles;
+    reg [31:0] shadow_idle_ticks;
+
+    reg prescaler_commit;
+
+    // Default values set on reset
+    always @(posedge clk) begin
+        if (reset) begin
+            reg_threshold_cycles     <= 32'd38;
+            reg_idle_ticks           <= 32'd3840;
+            shadow_threshold_cycles  <= 32'd38;
+            shadow_idle_ticks        <= 32'd3840;
+            prescaler_commit         <= 1'b0;
+        end else begin
+            // Self-clear one-shot flag
+            prescaler_commit <= 1'b0;
+
+            if (data_write) begin
+                case (address)
+                    // shadow_idle_ticks
+                    4'h4: shadow_idle_ticks[7:0]    <= data_in;
+                    4'h5: shadow_idle_ticks[15:8]   <= data_in;
+                    4'h6: shadow_idle_ticks[23:16]  <= data_in;
+                    4'h7: shadow_idle_ticks[31:24]  <= data_in;
+
+                    // shadow_threshold_cycles
+                    4'hC: shadow_threshold_cycles[7:0]    <= data_in;
+                    4'hD: shadow_threshold_cycles[15:8]   <= data_in;
+                    4'hE: shadow_threshold_cycles[23:16]  <= data_in;
+                    4'hF: shadow_threshold_cycles[31:24]  <= data_in;
+
+                    // Prescaler commit request
+                    4'h3: prescaler_commit <= 1'b1;
+                endcase
+            end
+
+            // Apply commit if triggered
+            if (prescaler_commit) begin
+                reg_threshold_cycles <= shadow_threshold_cycles;
+                reg_idle_ticks       <= shadow_idle_ticks;
+            end
+        end
+    end
+
 
 
 

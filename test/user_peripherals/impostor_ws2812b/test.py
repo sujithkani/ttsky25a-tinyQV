@@ -50,6 +50,30 @@ async def test_project(dut):
     tqv = TinyQV(dut, PERIPHERAL_NUM)
     await tqv.reset()
 
+    # -----------------------------------------
+    # Configure prescaler shadow registers
+    # -----------------------------------------
+    dut._log.info("Configuring shadow prescaler registers...")
+
+    # Set idle_ticks = 3840 = 0x00000F00
+    await tqv.write_reg(0x04, 0x00)  # LSB
+    await tqv.write_reg(0x05, 0x0F)
+    await tqv.write_reg(0x06, 0x00)
+    await tqv.write_reg(0x07, 0x00)
+
+    # Set threshold_cycles = 38 = 0x00000026
+    await tqv.write_reg(0x0C, 0x26)  # LSB
+    await tqv.write_reg(0x0D, 0x00)
+    await tqv.write_reg(0x0E, 0x00)
+    await tqv.write_reg(0x0F, 0x00)
+
+    # Commit new prescaler values
+    await tqv.write_reg(0x03, 0xFF)
+    await ClockCycles(dut.clk, 1)
+
+    # -----------------------------------------
+    # RGB data path test
+    # -----------------------------------------
     # Check if rgb?ready register is ON
     ready = int(await tqv.read_reg(15))
     assert ready == 0

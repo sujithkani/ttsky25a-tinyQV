@@ -32,28 +32,46 @@ Applications:
 
 ## Register Map
 
-| Address | Name        | Access | Description                                                                 |
-|---------|-------------|--------|-----------------------------------------------------------------------------|
-| 0x00    | `reg_r`     | R      | Last received **Red** byte                                                  |
-| 0x01    | `reg_g`     | R      | Last received **Green** byte                                               |
-| 0x02    | `reg_b`     | R      | Last received **Blue** byte                                                |
-| 0x0E    | `rgb_clear` | W      | Write `0x00` to clear `rgb_ready`; resets to `0x01` internally after toggle |
-| 0x0F    | `rgb_ready` | R      | `0xFF` if new RGB data received (latched), `0x00` after cleared by `rgb_clear` |
+| Address | Name                     | Access | Description                                                                 |
+|---------|--------------------------|--------|-----------------------------------------------------------------------------|
+| 0x00    | `reg_r`                  | R      | Last received **Red** byte                                                  |
+| 0x01    | `reg_g`                  | R      | Last received **Green** byte                                               |
+| 0x02    | `reg_b`                  | R      | Last received **Blue** byte                                                |
+| 0x03    | `prescaler_commit`       | W      | Write any value to **apply** new prescaler settings from shadow registers  |
+| 0x04–0x07 | `shadow_idle_ticks`    | W      | New `idle_ticks` value (32-bit, LSB at 0x04) – applied on `prescaler_commit` |
+| 0x0C–0x0F | `shadow_threshold_cycles` | W   | New `threshold_cycles` value (32-bit, LSB at 0x0C) – applied on `prescaler_commit` |
+| 0x0E    | `rgb_clear`              | W      | Write `0x00` to clear `rgb_ready`; resets to `0x01` internally after toggle |
+| 0x0F    | `rgb_ready`              | R      | `0xFF` if new RGB data received (latched), `0x00` after cleared by `rgb_clear` |
 
-> Nota: The WS2812B protocol sends colors in **GRB** order. This peripheral captures and reorders them internally for convenience.
+> **Note:** The WS2812B protocol sends colors in **GRB** order. This peripheral captures and reorders them internally for convenience.
+
+---
+
+## Prescaler Configuration
+
+The peripheral allows tuning of internal timing thresholds by writing 32-bit values into shadow registers:
+
+- `idle_ticks` defines how long the line must stay low to consider the bus idle.
+- `threshold_cycles` defines the pulse width threshold (in clock cycles) to determine if a bit is a `1` or a `0`.
+
+These values **only take effect** after writing to `prescaler_commit` (address `0x03`), making the update atomic.
 
 ## How to Test
 
 1. Connect a WS2812B signal generator (e.g. microcontroller or FPGA) to the `DIN` input (`ui_in[1]`).
-2. Transmit a standard WS2812B data frame with one or more 3-byte RGB values.
-3. Once the first 8x3=24 bits are received, the peripheral will:
-   - Store the values in the internal registers.
-   - Set the `rgb_ready` register to `0xFF` to indicate data availability.
-4. The user can now read:
+2. (Optional) Adjust timing parameters if needed:
+   - Write a new 32-bit `idle_ticks` value to addresses `0x04–0x07`
+   - Write a new 32-bit `threshold_cycles` value to addresses `0x0C–0x0F`
+   - Write any value (e.g. `0xFF`) to address `0x03` to **commit** the new values
+3. Transmit a standard WS2812B data frame with one or more 3-byte RGB values.
+4. Once the first 8×3 = 24 bits are received, the peripheral will:
+   - Store the first RGB triplet in the internal registers
+   - Set the `rgb_ready` register to `0xFF` to indicate data availability
+5. You can now read:
    - `reg_r` (0x00) for RED
    - `reg_g` (0x01) for GREEN
    - `reg_b` (0x02) for BLUE
-5. To acknowledge the data and re-arm the peripheral for new RGB input:
+6. To acknowledge the received data and re-arm the peripheral:
    - Write `0x00` to the `rgb_clear` register (0x0E)
    - The `rgb_ready` flag will automatically reset to `0x00`
 
