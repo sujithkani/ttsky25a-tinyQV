@@ -228,7 +228,7 @@ module tinyQV_peripherals (
         .user_interrupt(user_interrupts[5])
     );
 
-    tqvp_full_example i_user_peri06 (
+    tqvp_toivoh_pwl_synth i_user_peri06 (
         .clk(clk),
         .rst_n(rst_n),
 
