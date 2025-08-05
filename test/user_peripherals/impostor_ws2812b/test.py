@@ -128,7 +128,7 @@ async def test_project(dut):
     dut._log.info("Reading rgb_ready is 0x00")
     read1 = int(await tqv.read_reg(4))
     await ClockCycles(dut.clk, 1)  # allow state update
-    await tqv.write_reg(14, 0) 
+    await tqv.write_reg(3, 0) #rgb_clear
     await ClockCycles(dut.clk, 1)  # allow clearing to propagate
     read2 = int(await tqv.read_reg(4))
     assert read1 == 0x00
