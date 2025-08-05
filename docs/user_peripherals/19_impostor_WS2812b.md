@@ -32,15 +32,15 @@ Applications:
 
 | Address | Name                     | Access | Description                                                                 |
 |---------|--------------------------|--------|-----------------------------------------------------------------------------|
-| 0x00    | `reg_r`                  | R      | Last received **Red** byte                                                  |
-| 0x01    | `reg_g`                  | R      | Last received **Green** byte                                               |
-| 0x02    | `reg_b`                  | R      | Last received **Blue** byte                                                |
-| 0x03    | `prescaler_commit`       | W      | Write any value to **apply** new prescaler settings from shadow registers  |
-| 0x04–0x07 | `shadow_idle_ticks`    | W      | New `idle_ticks` value (32-bit, LSB at 0x04) – applied on `prescaler_commit` |
-| 0x0C–0x0F | `shadow_threshold_cycles` | W   | New `threshold_cycles` value (32-bit, LSB at 0x0C) – applied on `prescaler_commit` |
-| 0x10    | `din_select`            | W      | Selects which `ui_in[x]` pin to use as the input (`0x00`–`0x07`)             |
-| 0x0E    | `rgb_clear`              | W      | Write `0x00` to clear `rgb_ready`; resets to `0x01` internally after toggle |
-| 0x0F    | `rgb_ready`              | R      | `0xFF` if new RGB data received (latched), `0x00` after cleared by `rgb_clear` |
+| 0x00    | reg_r                  | R      | Last received **Red** byte                                                  |
+| 0x01    | reg_g                  | R      | Last received **Green** byte                                               |
+| 0x02    | reg_b                  | R      | Last received **Blue** byte                                                |
+| 0x03    | rgb_clear              | W      | Write 0x00 to clear rgb_ready; resets to 0x01 internally after toggle |
+| 0x04    | rgb_ready              | R      | 0xFF if new RGB data received (latched), 0x00 after cleared by rgb_clear |
+| 0x05    | prescaler_commit       | W      | Write any value to **apply** new prescaler settings from shadow registers  |
+| 0x06–0x09 | shadow_idle_ticks    | W      | New idle_ticks value (32-bit, LSB at 0x04) – applied on prescaler_commit |
+| 0x0A–0x0D | shadow_threshold_cycles | W   | New threshold_cycles value (32-bit, LSB at 0x0C) – applied on prescaler_commit |
+| 0x0E    | din_select            | W      | Selects which ui_in[x] pin to use as the input (0x00–0x07)             |
 
 > **Note:** The WS2812B protocol sends colors in **GRB** order. This peripheral captures and reorders them internally for convenience.
 

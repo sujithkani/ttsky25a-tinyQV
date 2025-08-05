@@ -37,7 +37,7 @@ module tqvp_impostor_WS2812b (
     //latching
     wire rgb_ready_pulse;
     reg  rgb_ready;
-    wire clear_rgb = (data_write && address == 4'hE);
+    wire clear_rgb = (data_write && address == 4'h3);
 
 
     // Registers to store the first 3 bytes (G, R, B)
