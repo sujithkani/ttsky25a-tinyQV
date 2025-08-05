@@ -22,7 +22,7 @@ module tqvp_laurie_dwarf_line_table_accelerator(
     output [31:0] data_out,
     output        data_ready,
 
-    // Interrupt request to TinyQV core.
+    // Interrupt request to TinyQV core, unused.
     output        user_interrupt
 );
 
@@ -39,23 +39,22 @@ module tqvp_laurie_dwarf_line_table_accelerator(
     // Public interface to memory mapped registers provided by the peripheral. Defined by the spec
     // for this peripheral.
 
-    localparam PROGRAM_HEADER    = 6'h0;
-    localparam PROGRAM_CODE      = 6'h1;
-    localparam AM_ADDRESS        = 6'h2;
-    localparam AM_FILE_DISCRIM   = 6'h3;
-    localparam AM_LINE_COL_FLAGS = 6'h4;
-    localparam STATUS            = 6'h5;
-    localparam INFO              = 6'h6;
+    localparam PROGRAM_HEADER    = 4'h0;
+    localparam PROGRAM_CODE      = 4'h1;
+    localparam AM_ADDRESS        = 4'h2;
+    localparam AM_FILE_DISCRIM   = 4'h3;
+    localparam AM_LINE_COL_FLAGS = 4'h4;
+    localparam STATUS            = 4'h5;
+    localparam INFO              = 4'h6;
 
     // PERIPHERAL STATUS CODES
     // Public interface, values read by software from the STATUS register. Defined by the spec for
     // this peripheral.
 
-    localparam STATUS_READY    = 3'h0;
-    localparam STATUS_EMIT_ROW = 3'h1;
-    localparam STATUS_BUSY     = 3'h2;
-    localparam STATUS_ILLEGAL  = 3'h3;
-    localparam STATUS_PAUSED   = 3'h4;
+    localparam STATUS_READY    = 2'h0;
+    localparam STATUS_EMIT_ROW = 2'h1;
+    localparam STATUS_BUSY     = 2'h2;
+    localparam STATUS_ILLEGAL  = 2'h3;
 
     // DWARF STANDARD OPCODES
     // The DWARF line table standard opcodes. Defined by the DWARF v5 spec.
@@ -93,7 +92,6 @@ module tqvp_laurie_dwarf_line_table_accelerator(
         STATE_PAUSE_FOR_EMIT_ROW,
         STATE_PAUSE_FOR_END_SEQUENCE,
         STATE_PAUSE_FOR_ILLEGAL,
-        STATE_PAUSE_FOR_RESUME,
         STATE_PARSE_LEB_128_BYTE0,
         STATE_PARSE_LEB_128_BYTE1,
         STATE_PARSE_LEB_128_BYTE2,
@@ -119,7 +117,6 @@ module tqvp_laurie_dwarf_line_table_accelerator(
         else if (set_st_state_pause_for_emit_row)     st_state <= STATE_PAUSE_FOR_EMIT_ROW;
         else if (set_st_state_pause_for_end_sequence) st_state <= STATE_PAUSE_FOR_END_SEQUENCE;
         else if (set_st_state_pause_for_illegal)      st_state <= STATE_PAUSE_FOR_ILLEGAL;
-        else if (set_st_state_pause_for_resume)       st_state <= STATE_PAUSE_FOR_RESUME;
         else if (set_st_state_parse_leb_128_byte0)    st_state <= STATE_PARSE_LEB_128_BYTE0;
         else if (set_st_state_parse_leb_128_byte1)    st_state <= STATE_PARSE_LEB_128_BYTE1;
         else if (set_st_state_parse_leb_128_byte2)    st_state <= STATE_PARSE_LEB_128_BYTE2;
@@ -154,7 +151,7 @@ module tqvp_laurie_dwarf_line_table_accelerator(
 
     assign reset_this_cycle = !rst_n;
 
-    assign write_this_cycle = rst_n && data_write_active;
+    assign write_this_cycle = rst_n && data_write_active && data_write_valid_alignment;
 
     assign exec_current_instruction_this_cycle = rst_n && !write_this_cycle && state_is_exec;
 
@@ -183,7 +180,7 @@ module tqvp_laurie_dwarf_line_table_accelerator(
 
     assign execution_paused =
         state_is_pause_for_emit_row || state_is_pause_for_end_sequence ||
-        state_is_pause_for_illegal || state_is_pause_for_resume;
+        state_is_pause_for_illegal;
 
     assign write_status = write_this_cycle && address_is_status;
 
@@ -193,7 +190,6 @@ module tqvp_laurie_dwarf_line_table_accelerator(
     logic set_st_state_pause_for_emit_row;
     logic set_st_state_pause_for_end_sequence;
     logic set_st_state_pause_for_illegal;
-    logic set_st_state_pause_for_resume;
     logic set_st_state_parse_leb_128_byte0;
     logic set_st_state_parse_leb_128_byte1;
     logic set_st_state_parse_leb_128_byte2;
@@ -213,6 +209,7 @@ module tqvp_laurie_dwarf_line_table_accelerator(
 
     assign set_st_state_ready =
         reset_this_cycle || write_program_header || write_status ||
+        (special_opcode_end_this_cycle && current_instruction_is_constaddpc) ||
         (exec_current_instruction_this_cycle && !current_instruction_is_extended);
 
     assign set_st_state_extended_opcode =
@@ -239,9 +236,6 @@ module tqvp_laurie_dwarf_line_table_accelerator(
             !current_byte_is_lns_constaddpc && !current_byte_is_lns_fixedadvancepc &&
             !current_byte_is_lns_setprologueend && !current_byte_is_lns_setepiloguebegin &&
             !current_byte_is_lns_setisa && !current_byte_is_extended_opcode_start);
-
-    assign set_st_state_pause_for_resume =
-        special_opcode_end_this_cycle && current_instruction_is_constaddpc;
 
     assign set_st_state_parse_leb_128_byte0 =
         (parse_extended_opcode_this_cycle && current_byte_is_lne_setdiscriminator) ||
@@ -422,46 +416,61 @@ module tqvp_laurie_dwarf_line_table_accelerator(
 
     always_ff @(posedge clk) begin
         if      (reset_this_cycle)     ph_default_is_stmt <= 0;
-        else if (write_program_header) ph_default_is_stmt <= data_in[0];
+        else if (write_program_header) ph_default_is_stmt <= next_ph_default_is_stmt;
     end
 
     logic [7:0] ph_line_base;
 
     always_ff @(posedge clk) begin
-        if      (reset_this_cycle)           ph_line_base <= 8'h0;
-        else if (write_program_header_byte1) ph_line_base <= data_in[15:8];
+        if      (reset_this_cycle)     ph_line_base <= 8'h0;
+        else if (write_program_header) ph_line_base <= next_ph_line_base;
     end
 
     logic [7:0] ph_line_range;
 
     always_ff @(posedge clk) begin
-        if      (reset_ph_line_range)              ph_line_range <= 8'h01;
-        else if (write_program_header_byte2_byte3) ph_line_range <= data_in[23:16];
+        if      (reset_ph_line_range)  ph_line_range <= 8'h01;
+        else if (write_program_header) ph_line_range <= next_ph_line_range;
     end
 
     logic [7:0] ph_opcode_base;
 
     always_ff @(posedge clk) begin
-        if      (reset_this_cycle)                 ph_opcode_base <= 8'h0D;
-        else if (write_program_header_byte2_byte3) ph_opcode_base <= data_in[31:24];
+        if      (reset_this_cycle)     ph_opcode_base <= 8'h0D;
+        else if (write_program_header) ph_opcode_base <= next_ph_opcode_base;
     end
 
-    logic write_program_header;
-    logic write_program_header_byte1;
-    logic write_program_header_byte2_byte3;
-    logic write_illegal_line_range;
-    logic reset_ph_line_range;
+    logic       write_program_header;
+    logic       write_illegal_line_range;
+    logic       reset_ph_line_range;
+    logic       next_ph_default_is_stmt;
+    logic [7:0] next_ph_line_base;
+    logic [7:0] next_ph_line_range;
+    logic [7:0] next_ph_opcode_base;
 
     assign write_program_header = write_this_cycle && address_is_program_header;
 
-    assign write_program_header_byte1 = write_program_header && data_write_n[1] != data_write_n[0];
-
-    assign write_program_header_byte2_byte3 = write_program_header && data_write_32_bit;
-
-    assign write_illegal_line_range =
-        write_program_header && write_program_header_byte2_byte3 && !(|data_in[23:16]);
+    assign write_illegal_line_range = write_program_header && !(|next_ph_line_range);
 
     assign reset_ph_line_range = reset_this_cycle || write_illegal_line_range;
+
+    assign next_ph_default_is_stmt = write_byte0_from_byte0 ? data_in[0] : ph_default_is_stmt;
+
+    assign next_ph_line_base =
+        write_byte1_from_byte0 ? data_in[7:0] :
+        write_byte1_from_byte1 ? data_in[15:8] :
+                                 ph_line_base;
+
+    assign next_ph_line_range =
+        write_byte2_from_byte0 ? data_in[7:0] :
+        write_byte2_from_byte2 ? data_in[23:16] :
+                                 ph_line_range;
+
+    assign next_ph_opcode_base =
+        write_byte3_from_byte0 ? data_in[7:0] :
+        write_byte3_from_byte1 ? data_in[15:8] :
+        write_byte3_from_byte3 ? data_in[31:24] :
+                                 ph_opcode_base;
 
     // PROGRAM CODE
     // Program code can be written by the host CPU in groups of 1, 2 or 4 bytes. These are stored in
@@ -780,7 +789,7 @@ module tqvp_laurie_dwarf_line_table_accelerator(
 
     assign reset_am_basic_block =
         reset_this_cycle || write_program_header ||
-        (write_status && execution_paused && !state_is_pause_for_resume);
+        (write_status && execution_paused);
 
     assign set_am_basic_block =
         parse_standard_opcode_this_cycle && current_byte_is_lns_setbasicblock;
@@ -820,7 +829,7 @@ module tqvp_laurie_dwarf_line_table_accelerator(
 
     assign reset_am_prologue_end =
         reset_this_cycle || write_program_header ||
-        (write_status && execution_paused && !state_is_pause_for_resume);
+        (write_status && execution_paused);
 
     assign set_am_prologue_end =
         parse_standard_opcode_this_cycle && current_byte_is_lns_setprologueend;
@@ -840,7 +849,7 @@ module tqvp_laurie_dwarf_line_table_accelerator(
 
     assign reset_am_epilogue_begin =
         reset_this_cycle || write_program_header ||
-        (write_status && execution_paused && !state_is_pause_for_resume);
+        (write_status && execution_paused);
 
     assign set_am_epilogue_begin =
         parse_standard_opcode_this_cycle && current_byte_is_lns_setepiloguebegin;
@@ -862,7 +871,7 @@ module tqvp_laurie_dwarf_line_table_accelerator(
 
     assign reset_am_discriminator =
         reset_this_cycle || write_program_header ||
-        (write_status && execution_paused && !state_is_pause_for_resume);
+        (write_status && execution_paused);
 
     assign assign_operand_to_am_discriminator =
         exec_current_instruction_this_cycle && current_instruction_is_discriminator;
@@ -873,25 +882,39 @@ module tqvp_laurie_dwarf_line_table_accelerator(
 
     localparam VERSION_INFO = 32'h00000155;
 
-    assign data_out[7:0]   = data_read_byte_0_valid   ? out_selected_register[7:0]   : 8'h0;
-    assign data_out[15:8]  = data_read_byte_1_valid   ? out_selected_register[15:8]  : 8'h0;
-    assign data_out[31:16] = data_read_byte_2_3_valid ? out_selected_register[31:16] : 16'h0;
-    assign data_ready      = 1;
+    assign data_out[7:0] =
+        read_byte0_from_byte0 ? out_register[7:0] : 
+        read_byte0_from_byte1 ? out_register[15:8] :
+        read_byte0_from_byte2 ? out_register[23:16] :
+        read_byte0_from_byte3 ? out_register[31:24] :
+                                8'h0;
 
+    assign data_out[15:8] =
+        read_byte1_from_byte1 ? out_register[15:8] :
+        read_byte1_from_byte3 ? out_register[31:24] :
+                                8'h0;
+
+    assign data_out[31:16] = read_byte2_3_from_byte2_3 ? out_register[31:16] : 16'h0;
+
+    assign data_ready = 1;
+
+    logic [31:0] out_register;
     logic [31:0] out_selected_register;
     logic [31:0] out_program_header;
     logic [31:0] out_am_address;
     logic [31:0] out_am_file_descrim;
     logic [31:0] out_am_line_col_flags;
-    logic [2:0]  out_status;
+    logic [1:0]  out_status;
+
+    assign out_register = data_read_valid_alignment ? out_selected_register : 32'h0;
 
     always_comb begin
-        case (address)
+        case (address[5:2])
             PROGRAM_HEADER:    out_selected_register = out_program_header;
             AM_ADDRESS:        out_selected_register = out_am_address;
             AM_FILE_DISCRIM:   out_selected_register = out_am_file_descrim;
             AM_LINE_COL_FLAGS: out_selected_register = out_am_line_col_flags;
-            STATUS:            out_selected_register = { 29'h0, out_status };
+            STATUS:            out_selected_register = { 30'h0, out_status };
             INFO:              out_selected_register = VERSION_INFO;
             default:           out_selected_register = 32'h0;
         endcase
@@ -911,38 +934,19 @@ module tqvp_laurie_dwarf_line_table_accelerator(
     };
 
     always_comb begin
-        case (st_state)
-            STATE_PAUSE_FOR_ILLEGAL:      out_status = STATUS_ILLEGAL;
-            STATE_PAUSE_FOR_RESUME:       out_status = STATUS_PAUSED;
-            STATE_PAUSE_FOR_EMIT_ROW:     out_status = STATUS_EMIT_ROW;
-            STATE_PAUSE_FOR_END_SEQUENCE: out_status = STATUS_EMIT_ROW;
-            STATE_SPECIAL_OPCODE:         out_status = STATUS_BUSY;
-            default:                      out_status = STATUS_READY;
-        endcase
+        if      (state_is_pause_for_illegal) out_status = STATUS_ILLEGAL;
+        else if (status_is_emit_row)         out_status = STATUS_EMIT_ROW;
+        else if (status_is_busy)             out_status = STATUS_BUSY;
+        else                                 out_status = STATUS_READY;
     end
 
-    // INTERRUPT OUTPUT
-    // This logic manages when to signal an interrupt to the host process.
+    logic status_is_emit_row;
+    logic status_is_busy;
 
-    logic out_interrupt;
+    assign status_is_emit_row = state_is_pause_for_emit_row || state_is_pause_for_end_sequence;
 
-    always_ff @(posedge clk) begin
-        if      (clear_interrupt) out_interrupt <= 0;
-        else if (raise_interrupt) out_interrupt <= 1;
-    end
-
-    assign user_interrupt = out_interrupt;
-
-    logic clear_interrupt;
-    logic raise_interrupt;
-
-    assign clear_interrupt =
-        reset_this_cycle || write_status || write_program_header || write_program_code;
-
-    assign raise_interrupt =
-        (parse_standard_opcode_this_cycle && current_byte_is_lns_copy) ||
-        (parse_extended_opcode_this_cycle && current_byte_is_lne_endsequence) ||
-        parse_special_opcode_or_constaddpc_this_cycle || set_st_state_pause_for_illegal;
+    assign status_is_busy =
+        current_byte_valid || state_is_special_opcode || exec_current_instruction_this_cycle;
 
     // SHARED ADDERS
     // There are several places using a general adder, and a couple using a special case adder where
@@ -977,6 +981,16 @@ module tqvp_laurie_dwarf_line_table_accelerator(
     // COMMON COMPARISONS
     // A series of common comparisons, done in one place.
 
+    logic data_write_valid_alignment;
+    logic data_read_valid_alignment;
+
+    assign data_write_valid_alignment =
+        data_write_8_bit || (data_write_16_bit && !address[0]) ||
+        (data_write_32_bit && !(|address[1:0]));
+    assign data_read_valid_alignment  =
+        data_read_8_bit || (data_read_16_bit && !address[0]) ||
+        (data_read_32_bit && !(|address[1:0]));
+
     logic data_write_active;
     logic data_write_8_bit;
     logic data_write_16_bit;
@@ -987,13 +1001,57 @@ module tqvp_laurie_dwarf_line_table_accelerator(
     assign data_write_16_bit = data_write_n == RW_16_BIT;
     assign data_write_32_bit = data_write_n == RW_32_BIT;
 
-    logic data_read_byte_0_valid;
-    logic data_read_byte_1_valid;
-    logic data_read_byte_2_3_valid;
+    logic data_read_8_bit;
+    logic data_read_16_bit;
+    logic data_read_32_bit;
 
-    assign data_read_byte_0_valid   = !(&data_read_n);
-    assign data_read_byte_1_valid   = data_read_n[0] != data_read_n[1];
-    assign data_read_byte_2_3_valid = data_read_n == RW_32_BIT;
+    assign data_read_8_bit  = data_read_n == RW_8_BIT;
+    assign data_read_16_bit = data_read_n == RW_16_BIT;
+    assign data_read_32_bit = data_read_n == RW_32_BIT;
+
+    logic write_byte0_from_byte0;
+    logic write_byte1_from_byte0;
+    logic write_byte1_from_byte1;
+    logic write_byte2_from_byte0;
+    logic write_byte2_from_byte2;
+    logic write_byte3_from_byte0;
+    logic write_byte3_from_byte1;
+    logic write_byte3_from_byte3;
+
+    assign write_byte0_from_byte0 =
+        data_write_n == RW_32_BIT || (data_write_n == RW_16_BIT && !address[1]) ||
+        (data_write_n == RW_8_BIT && address[1:0] == 2'h0);
+    assign write_byte1_from_byte0 = data_write_n == RW_8_BIT && address[1:0] == 2'h1;
+    assign write_byte1_from_byte1 =
+        data_write_n == RW_32_BIT || (data_write_n == RW_16_BIT && !address[1]);
+    assign write_byte2_from_byte0 =
+        (data_write_n == RW_16_BIT && address[1]) ||
+        (data_write_n == RW_8_BIT && address[1:0] == 2'h2);
+    assign write_byte2_from_byte2 = data_write_n == RW_32_BIT;
+    assign write_byte3_from_byte0 = data_write_n == RW_8_BIT && address[1:0] == 2'h3;
+    assign write_byte3_from_byte1 = data_write_n == RW_16_BIT && address[1];
+    assign write_byte3_from_byte3 = write_byte2_from_byte2;
+
+    logic read_byte0_from_byte0;
+    logic read_byte0_from_byte1;
+    logic read_byte0_from_byte2;
+    logic read_byte0_from_byte3;
+    logic read_byte1_from_byte1;
+    logic read_byte1_from_byte3;
+    logic read_byte2_3_from_byte2_3;
+
+    assign read_byte0_from_byte0     =
+        data_read_n == RW_32_BIT || (data_read_n == RW_16_BIT && !address[1]) ||
+        (data_read_n == RW_8_BIT && address[1:0] == 2'h0);
+    assign read_byte0_from_byte1     = data_read_n == RW_8_BIT && address[1:0] == 2'h1;
+    assign read_byte0_from_byte2     =
+        (data_read_n == RW_16_BIT && address[1]) ||
+        (data_read_n == RW_8_BIT && address[1:0] == 2'h2);
+    assign read_byte0_from_byte3     = data_read_n == RW_8_BIT && address[1:0] == 2'h3;
+    assign read_byte1_from_byte1     =
+        data_read_n == RW_32_BIT || (data_read_n == RW_16_BIT && !address[1]);
+    assign read_byte1_from_byte3     = data_read_n == RW_16_BIT && address[1];
+    assign read_byte2_3_from_byte2_3 = data_read_n == RW_32_BIT;
 
     logic program_code_byte_0_valid;
     logic program_code_byte_1_valid;
@@ -1010,7 +1068,6 @@ module tqvp_laurie_dwarf_line_table_accelerator(
     logic state_is_pause_for_emit_row;
     logic state_is_pause_for_end_sequence;
     logic state_is_pause_for_illegal;
-    logic state_is_pause_for_resume;
     logic state_is_parse_leb_128_byte0;
     logic state_is_parse_leb_128_byte1;
     logic state_is_parse_leb_128_byte2;
@@ -1034,7 +1091,6 @@ module tqvp_laurie_dwarf_line_table_accelerator(
     assign state_is_pause_for_emit_row     = st_state == STATE_PAUSE_FOR_EMIT_ROW;
     assign state_is_pause_for_end_sequence = st_state == STATE_PAUSE_FOR_END_SEQUENCE;
     assign state_is_pause_for_illegal      = st_state == STATE_PAUSE_FOR_ILLEGAL;
-    assign state_is_pause_for_resume       = st_state == STATE_PAUSE_FOR_RESUME;
     assign state_is_parse_leb_128_byte0    = st_state == STATE_PARSE_LEB_128_BYTE0;
     assign state_is_parse_leb_128_byte1    = st_state == STATE_PARSE_LEB_128_BYTE1;
     assign state_is_parse_leb_128_byte2    = st_state == STATE_PARSE_LEB_128_BYTE2;
@@ -1093,9 +1149,9 @@ module tqvp_laurie_dwarf_line_table_accelerator(
     logic address_is_program_header;
     logic address_is_program_code;
 
-    assign address_is_status         = address == STATUS;
-    assign address_is_program_header = address == PROGRAM_HEADER;
-    assign address_is_program_code   = address == PROGRAM_CODE;
+    assign address_is_status         = address[5:2] == STATUS;
+    assign address_is_program_header = address[5:2] == PROGRAM_HEADER;
+    assign address_is_program_code   = address[5:2] == PROGRAM_CODE;
 
     logic current_instruction_is_nop;
     logic current_instruction_is_constaddpc;
@@ -1118,10 +1174,11 @@ module tqvp_laurie_dwarf_line_table_accelerator(
     assign current_instruction_is_discriminator = st_current_instruction == INSTR_SETDISCRIMINATOR;
 
     // UNUSED
-    // Pmod interface is unused. Drive the outputs to 0 and mark the Pmod inputs as unused to avoid
-    // warnings.
+    // Pmod and interrupt interfaces are unused. Drive the outputs to 0 and mark the Pmod inputs as
+    // unused to avoid warnings.
 
-    assign uo_out[7:0] = 8'h0;
+    assign user_interrupt = 0;
+    assign uo_out[7:0]    = 8'h0;
 
     wire _unused  = &{ ui_in };
 
