@@ -177,7 +177,7 @@ async def test_project(dut):
 
 
 @cocotb.test()
-async def test_project(dut):
+async def test_project24(dut):
     dut._log.info("Start test 24Mhz")
 
     clock = Clock(dut.clk, 42, units="ns")  # =23.809523809524 MHz, close enough to 24 MHz for test
