@@ -16,15 +16,11 @@ Peripheral index: 19
 
 This module emulates the behavior of a WS2812B addressable RGB LED. It is designed to integrate  into a daisy-chained WS2812B LED strip, acting as a "virtual LED" or "impostor" within the chain.
 
-It receives data on the `DIN` input pin (typically connected to the previous LED in the chain or a microcontroller), extracts and stores the RGB values destined for it, and then forwards the remaining data to the next element in the chain via the `DOUT` output pin. 
+It receives data on the `DIN` input pin (typically connected to the previous LED in the chain or a microcontroller), extracts and stores the RGB values destined for it, and then forwards the remaining data to the next element in the chain via the `DOUT` output pin.     
+
+[Demo video on LinkedIn](https://www.linkedin.com/feed/update/urn:li:activity:7353011346612850689/)
 
 This passthrough behavior mimics that of a real WS2812B LED. This allows the module to coexist with actual LEDs or other impostor modules in a daisy-chain configuration.
-
-- Fully compatible timing and protocol emulation with WS2812B devices.
-- Can be inserted anywhere in a WS2812B LED chain.
-- Extracts and stores the first RGB triplet received (24 bits: G, R, B).
-- Exposes internal state via a simple memory-mapped register interface.
-- Supports external clearing of the `rgb_ready` latch to detect new data arrivals.    
 
 Applications:
 - Simulation or logging tools for WS2812B protocols.
@@ -80,6 +76,4 @@ These values **only take effect** after writing to `prescaler_commit` (address `
 - **WS2812B Driver or Controller** (e.g. microcontroller, FPGA logic, cheap chinese led driver)
 - **Additional WS2812B LEDs or Impostor Modules**:
   This peripheral supports forwarding of the remaining data to downstream LEDs via the `DOUT` pin, enabling full compatibility with mixed chains of real and imposter devices.
-
-
 
