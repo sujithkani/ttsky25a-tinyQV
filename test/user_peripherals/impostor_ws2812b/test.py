@@ -56,19 +56,19 @@ async def test_project(dut):
     dut._log.info("Configuring shadow prescaler registers...")
 
     # Set idle_ticks = 3840 = 0x00000F00
-    await tqv.write_reg(0x04, 0x00)  # LSB
-    await tqv.write_reg(0x05, 0x0F)
-    await tqv.write_reg(0x06, 0x00)
-    await tqv.write_reg(0x07, 0x00)
+    await tqv.write_reg(0x06, 0x00)  # LSB
+    await tqv.write_reg(0x07, 0x0F)
+    await tqv.write_reg(0x08, 0x00)
+    await tqv.write_reg(0x09, 0x00)
 
     # Set threshold_cycles = 38 = 0x00000026
-    await tqv.write_reg(0x0C, 0x26)  # LSB
+    await tqv.write_reg(0x0A, 0x26)  # LSB
+    await tqv.write_reg(0x0B, 0x00)
+    await tqv.write_reg(0x0C, 0x00)
     await tqv.write_reg(0x0D, 0x00)
-    await tqv.write_reg(0x0E, 0x00)
-    await tqv.write_reg(0x0F, 0x00)
 
     # Commit new prescaler values
-    await tqv.write_reg(0x03, 0xFF)
+    await tqv.write_reg(0x05, 0xFF)
     await ClockCycles(dut.clk, 1)
 
     # -----------------------------------------
@@ -77,13 +77,13 @@ async def test_project(dut):
     dut._log.info("Configuring DIn to be ui_[1]...")
 
     # Set din to pin 1
-    await tqv.write_reg(0x10, 0x01)  # LSB
+    await tqv.write_reg(0xE, 0x01)  # LSB
 
     # -----------------------------------------
     # RGB data path test
     # -----------------------------------------
-    # Check if rgb?ready register is ON
-    ready = int(await tqv.read_reg(15))
+    # Check if rgb_ready register is ON
+    ready = int(await tqv.read_reg(4))
     assert ready == 0
     dut._log.info("Reading rgb_ready is OFF")
 
@@ -98,11 +98,11 @@ async def test_project(dut):
     await ClockCycles(dut.clk, 10)
 
     dut._log.info("Reading rgb_ready is 0xFF and that cleared when writen a 0 to addr 0xe")
-    await tqv.read_reg(15)==0xFF
+    await tqv.read_reg(4)==0xFF
     await ClockCycles(dut.clk, 1)  # allow state update
     await tqv.write_reg(14, 0) 
     await ClockCycles(dut.clk, 1)  # allow clearing to propagate
-    await tqv.read_reg(15)==0x00
+    await tqv.read_reg(4)==0x00
     
     # Read back registers
     g = int(await tqv.read_reg(1))
@@ -126,11 +126,11 @@ async def test_project(dut):
     await ClockCycles(dut.clk, 10)
 
     dut._log.info("Reading rgb_ready is 0x00")
-    read1 = int(await tqv.read_reg(15))
+    read1 = int(await tqv.read_reg(4))
     await ClockCycles(dut.clk, 1)  # allow state update
     await tqv.write_reg(14, 0) 
     await ClockCycles(dut.clk, 1)  # allow clearing to propagate
-    read2 = int(await tqv.read_reg(15))
+    read2 = int(await tqv.read_reg(4))
     assert read1 == 0x00
     assert read2 == 0x00
 

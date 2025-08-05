@@ -114,7 +114,7 @@ module tqvp_impostor_WS2812b (
             4'h0: data_out_r = reg_r;
             4'h1: data_out_r = reg_g;
             4'h2: data_out_r = reg_b;
-            4'hF: data_out_r = rgb_ready ? 8'hFF : 8'h00;//0xFF if rgb_ready 0x00 if0
+            4'h4: data_out_r = rgb_ready ? 8'hFF : 8'h00;//0xFF if rgb_ready 0x00 if0
             default: data_out_r = 8'h00;
         endcase
     end
@@ -161,19 +161,19 @@ module tqvp_impostor_WS2812b (
             if (data_write) begin
                 case (address)
                     // shadow_idle_ticks
-                    4'h4: shadow_idle_ticks[7:0]    <= data_in;
-                    4'h5: shadow_idle_ticks[15:8]   <= data_in;
-                    4'h6: shadow_idle_ticks[23:16]  <= data_in;
-                    4'h7: shadow_idle_ticks[31:24]  <= data_in;
+                    4'h6: shadow_idle_ticks[7:0]    <= data_in;
+                    4'h7: shadow_idle_ticks[15:8]   <= data_in;
+                    4'h8: shadow_idle_ticks[23:16]  <= data_in;
+                    4'h9: shadow_idle_ticks[31:24]  <= data_in;
 
                     // shadow_threshold_cycles
-                    4'hC: shadow_threshold_cycles[7:0]    <= data_in;
-                    4'hD: shadow_threshold_cycles[15:8]   <= data_in;
-                    4'hE: shadow_threshold_cycles[23:16]  <= data_in;
-                    4'hF: shadow_threshold_cycles[31:24]  <= data_in;
+                    4'hA: shadow_threshold_cycles[7:0]    <= data_in;
+                    4'hB: shadow_threshold_cycles[15:8]   <= data_in;
+                    4'hC: shadow_threshold_cycles[23:16]  <= data_in;
+                    4'hD: shadow_threshold_cycles[31:24]  <= data_in;
 
                     // Prescaler commit request
-                    4'h3: prescaler_commit <= 1'b1;
+                    4'h5: prescaler_commit <= 1'b1;
                 endcase
             end
 
@@ -194,7 +194,7 @@ wire din = ui_in[reg_din_select];
 always @(posedge clk) begin
     if (reset) begin
         reg_din_select <= 3'd1;  // Default DIN = ui_in[1]
-    end else if (data_write && address == 4'h10) begin
+    end else if (data_write && address == 4'hE) begin
         reg_din_select <= data_in[2:0]; // Only use lower 3 bits
     end
 end
