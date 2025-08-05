@@ -71,6 +71,8 @@ These values **only take effect** after writing to `prescaler_commit` (address `
    - Write `0x00` to the `rgb_clear` register (0x0E)
    - The `rgb_ready` flag will automatically reset to `0x00`
 
+![FPGA test](19_image.jpg)
+
 ## External Hardware
 
 - **WS2812B Driver or Controller** (e.g. microcontroller, FPGA logic, cheap chinese led driver)
