@@ -19,3 +19,4 @@ test/gate_level_netlist.v
 *.log
 *.uf2
 gds_render_preview*
+tt/
