@@ -56,6 +56,7 @@ project:
     - "user_peripherals/prism/prism.v"
     - "user_peripherals/prism/prism_latch_sit.v"
     - "user_peripherals/prism/prism_latch_reg.v"
+    - "user_peripherals/wdt/tqvp_nkanderson_wdt.sv"
     - "tinyQV/cpu/tinyqv.v"
     - "tinyQV/cpu/alu.v"
     - "tinyQV/cpu/core.v"
