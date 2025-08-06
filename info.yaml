@@ -53,6 +53,7 @@ project:
     - "user_peripherals/pwl_synth/pwl_synth.sv"
     - "user_peripherals/pwl_synth/pwl_synth_memory.sv"
     - "user_peripherals/wdt/tqvp_nkanderson_wdt.sv"
+    - "user_peripherals/tqvp_laurie_dwarf_line_table_accelerator.sv"
     - "tinyQV/cpu/tinyqv.v"
     - "tinyQV/cpu/alu.v"
     - "tinyQV/cpu/core.v"
