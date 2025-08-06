@@ -17,7 +17,9 @@ ifneq ($(SYNTH),yes)
 SIM_BUILD				= sim_build/rtl
 VERILOG_SOURCES += $(addprefix $(SRC_DIR)/,$(PROJECT_SOURCES))
 COMPILE_ARGS 		+= -DSIM
+COMPILE_ARGS 		+= -DPURE_RTL
 COMPILE_ARGS 		+= -I$(SRC_DIR)
+COMPILE_ARGS 		+= -I$(addprefix $(SRC_DIR)/,user_peripherals/pwl_synth)
 
 else
 

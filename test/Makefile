@@ -11,6 +11,7 @@ USER_PERIPHERALS = \
     test_spike  \
 	fpu.test \
 	baby_vga.test \
+	pwl_synth.test \
 	wdt.test \
 
 .PHONY: all $(USER_PERIPHERALS)
