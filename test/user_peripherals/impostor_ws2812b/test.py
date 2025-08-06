@@ -89,7 +89,7 @@ async def tests64Mhz(dut):
 
     dut._log.info("Sending 3 bytes (G, R, B)")
 
-    # Send 3 bytes for RGB (G=0x12, R=0x34, B=0x56)
+    dut._log.info(f"Sending 3 bytes (G={0x12}, R={0x34}, B={0x56})")
     await send_ws2812b_byte(dut, 0x12)#g
     await send_ws2812b_byte(dut, 0x34)#r
     await send_ws2812b_byte(dut, 0x56)#b
@@ -117,7 +117,7 @@ async def tests64Mhz(dut):
     # Now send THREE extra byteS and confirm bits get forwarded and not detected
     dut._log.info("Testing bit forwarding to DOUT")
 
-    # Send 3 bytes for RGB (G=0x12, R=0x34, B=0x56)
+    dut._log.info(f"Sending 3 bytes (G={0xDE}, R={0xAD}, B={0xFF})")
     await send_ws2812b_byte(dut, 0xDE)
     await send_ws2812b_byte(dut, 0xAD)
     await send_ws2812b_byte(dut, 0xFF)
@@ -147,7 +147,7 @@ async def tests64Mhz(dut):
     assert int(await tqv.read_reg(0)) == 0x34  # Still holds, unless you clear manually in RTL
 
     #SEND AGAIN AFTER IDLE
-    # Send 3 bytes for RGB (G=0x12, R=0x34, B=0x56)
+    dut._log.info(f"Sending 3 bytes (G={0xab}, R={0xcd}, B={0xef})")
     await send_ws2812b_byte(dut, 0xab)
     await send_ws2812b_byte(dut, 0xcd)
     await send_ws2812b_byte(dut, 0xef)
@@ -225,7 +225,7 @@ async def tests24Mhz(dut):
 
     dut._log.info("Sending 3 bytes (G, R, B)")
 
-    # Send 3 bytes for RGB (G=0x12, R=0x34, B=0x56)
+    dut._log.info(f"Sending 3 bytes (G={0x12}, R={0x34}, B={0x56})")
     await send_ws2812b_byte(dut, 0x12,42,2)#g
     await send_ws2812b_byte(dut, 0x34,42,2)#r
     await send_ws2812b_byte(dut, 0x56,42,2)#b
@@ -253,7 +253,7 @@ async def tests24Mhz(dut):
     # Now send THREE extra byteS and confirm bits get forwarded and not detected
     dut._log.info("Testing bit forwarding to DOUT")
 
-    # Send 3 bytes for RGB (G=0x12, R=0x34, B=0x56)
+    dut._log.info(f"Sending 3 bytes (G={0xDE}, R={0xAD}, B={0xFF})")
     await send_ws2812b_byte(dut, 0xDE,42,2)
     await send_ws2812b_byte(dut, 0xAD,42,2)
     await send_ws2812b_byte(dut, 0xFF,42,2)
@@ -283,7 +283,7 @@ async def tests24Mhz(dut):
     assert int(await tqv.read_reg(0)) == 0x34  # Still holds, unless you clear manually in RTL
 
     #SEND AGAIN AFTER IDLE
-    # Send 3 bytes for RGB (G=0x12, R=0x34, B=0x56)
+    dut._log.info(f"Sending 3 bytes (G={0xab}, R={0xcd}, B={0xef})")
     await send_ws2812b_byte(dut, 0xab,42,2)
     await send_ws2812b_byte(dut, 0xcd,42,2)
     await send_ws2812b_byte(dut, 0xef,42,2)
@@ -306,7 +306,7 @@ async def tests24Mhz(dut):
 
 
 @cocotb.test()
-async def tests8MhzWithInputsRoulete(dut):
+async def tests8MhzWithInputsRegisterRoulete(dut):
     dut._log.info("Start test 8Mhz")
 
     clock = Clock(dut.clk, 125, units="ns")  # =8 MHz, sharp
@@ -351,8 +351,8 @@ async def tests8MhzWithInputsRoulete(dut):
         ready = int(await tqv.read_reg(4))
         assert ready == 0
         dut._log.info("Reading rgb_ready is OFF")
-        dut._log.info("Sending 3 bytes (G, R, B)")
 
+        dut._log.info(f"Sending 3 bytes (G={i+1}, R={i}, B={i+2})")
         # Send 3 bytes for RGB 
         await send_ws2812b_byte(dut, i+1    ,125,i)#g
         await send_ws2812b_byte(dut, i      ,125,i)#r
@@ -381,7 +381,7 @@ async def tests8MhzWithInputsRoulete(dut):
         # Now send THREE extra byteS and confirm bits get forwarded and not detected
         dut._log.info("Testing bit forwarding to DOUT")
 
-        # Send 3 bytes for RGB (G=0x12, R=0x34, B=0x56)
+        dut._log.info(f"Sending 3 bytes (G={0xDE}, R={0xAD}, B={0xFF})")
         await send_ws2812b_byte(dut, 0xDE,125,i)
         await send_ws2812b_byte(dut, 0xAD,125,i)
         await send_ws2812b_byte(dut, 0xFF,125,i)
@@ -411,6 +411,7 @@ async def tests8MhzWithInputsRoulete(dut):
 
     #SEND AGAIN AFTER IDLE
     # Send 3 bytes for RGB
+    dut._log.info(f"Sending 3 bytes (G={0xea}, R={0xae}, B={0x12})")
     await send_ws2812b_byte(dut, 0xea,125,7)
     await send_ws2812b_byte(dut, 0xae,125,7)
     await send_ws2812b_byte(dut, 0x12,125,7)
