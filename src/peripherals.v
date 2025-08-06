@@ -323,7 +323,7 @@ module tinyQV_peripherals (
         .user_interrupt(user_interrupts[10])
     );
 
-    tqvp_full_example i_user_peri11 (
+    tqvp_hx2003_pulse_transmitter i_user_peri11 (
         .clk(clk),
         .rst_n(rst_n),
 
