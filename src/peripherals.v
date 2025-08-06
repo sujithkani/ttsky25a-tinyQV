@@ -266,7 +266,7 @@ module tinyQV_peripherals (
         .user_interrupt(user_interrupts[7])
     );
 
-    tqvp_full_example i_user_peri08 (
+    tqvp_prism i_prism08 (
         .clk(clk),
         .rst_n(rst_n),
 
