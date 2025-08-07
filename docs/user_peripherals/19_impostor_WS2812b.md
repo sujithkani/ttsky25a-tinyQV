@@ -38,8 +38,8 @@ Applications:
 | 0x03    | rgb_clear              | W      | Write 0x00 to clear rgb_ready; after taking effect,resets back to 0x01 internally |
 | 0x04    | rgb_ready              | R      | 0xFF if new RGB data received (latched), 0x00 only after cleared by rgb_clear |
 | 0x05    | prescaler_commit       | W      | Write any value to **apply** new prescaler settings from shadow registers  |
-| 0x06–0x09 | shadow_idle_ticks    | W      | New idle_ticks value (32-bit, LSB at 0x04) – applied on prescaler_commit |
-| 0x0A–0x0D | shadow_threshold_cycles | W   | New threshold_cycles value (32-bit, LSB at 0x0C) – applied on prescaler_commit |
+| 0x06–0x07 | shadow_idle_ticks    | W      | New idle_ticks value (16-bit, LSB at 0x04) – applied on prescaler_commit |
+| 0x0A–0x0B | shadow_threshold_cycles | W   | New threshold_cycles value (16-bit, LSB at 0x0C) – applied on prescaler_commit |
 | 0x0E    | din_select            | W      | Selects which ui_in[x] pin to use as the input (0x00–0x07)             |
 
 > **Note:** The WS2812B protocol sends colors in **GRB** order. This peripheral captures and reorders them internally for convenience.
@@ -48,7 +48,7 @@ Applications:
 
 ## Prescaler Configuration
 
-The peripheral allows tuning of internal timing thresholds by writing 32-bit values into shadow registers:
+The peripheral allows tuning of internal timing thresholds by writing 16-bit values into shadow registers:
 
 - `shadow_idle_ticks` defines how long the line must stay low to consider the bus idle 50000ns.    
  Is calculated as idle_ticks=50000/(clk_preiod_ns), for example with a clock of 64Mhz (or T=15.625ns) idle_ticks=50000/15,625=3200
