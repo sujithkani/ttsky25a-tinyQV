@@ -13,7 +13,11 @@ async def reset(dut, latency=1, ui_in=0x80):
     dut._log.info(f"Reset, latency {latency}")
     dut.ena.value = 1
     dut.ui_in_base.value = ui_in
-    dut.uio_in.value = 0
+    dut.uio_in[0].value = 0
+    dut.uio_in[3].value = 0
+    dut.uio_in[6].value = 0
+    dut.uio_in[7].value = 0
+    dut.qspi_data_in.value = 0
     dut.rst_n.value = 1
     dut.uart_rx.value = 1
     await ClockCycles(dut.clk, 2)
@@ -222,7 +226,9 @@ def start_nops(dut):
 async def stop_nops():
     global send_nops, nop_task
     send_nops = False
-    await nop_task
+    if nop_task is not None:
+        await nop_task
+    nop_task = None
 
 async def read_byte(dut, reg, expected_val):
   await send_instr(dut, InstructionSW(tp, reg, 0x18).encode())
