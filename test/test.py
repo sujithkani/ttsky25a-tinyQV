@@ -38,7 +38,7 @@ async def test_start(dut):
   await send_instr(dut, InstructionADDI(x1, x0, uart_byte).encode())
   await send_instr(dut, InstructionSW(tp, x1, 0x80).encode())
 
-  start_nops(dut)
+  await start_nops(dut)
   bit_time = 8680
   await Timer(bit_time / 2, "ns")
   assert dut.uart_tx.value == 0
@@ -95,7 +95,7 @@ async def test_start(dut):
     await read_byte(dut, x1, 0)
 
     if j != 4:
-        start_nops(dut)
+        await start_nops(dut)
 
   # Test Debug UART TX
   uart_byte = 0x5A
@@ -111,7 +111,7 @@ async def test_start(dut):
     await send_instr(dut, InstructionADDI(x1, x0, spi_byte | 0x100).encode())
     await send_instr(dut, InstructionSW(tp, x1, 0x20).encode())
 
-    start_nops(dut)
+    await start_nops(dut)
     assert dut.spi_cs == 1
     for i in range(20):
         await ClockCycles(dut.clk, 1)
@@ -154,7 +154,7 @@ async def test_start(dut):
         await send_instr(dut, InstructionADDI(x1, x0, spi_byte | 0x100).encode())
         await send_instr(dut, InstructionSW(tp, x1, 0x20).encode())
 
-        start_nops(dut)
+        await start_nops(dut)
         assert dut.spi_cs == 1
         for i in range(20):
             await ClockCycles(dut.clk, 1)
@@ -225,7 +225,7 @@ async def test_timer(dut):
     await send_instr(dut, InstructionLW(x1, x0, -0x100).encode())
     assert await read_reg(dut, x1) <= 1
 
-    start_nops(dut)
+    await start_nops(dut)
     await Timer(5, "us")
     await stop_nops()
 
@@ -297,7 +297,7 @@ async def test_debug_reg(dut):
   for i in range(8):
     val += 0x102 * i
     await send_instr(dut, InstructionADDI(i+8, x0 if i == 0 else (i+7), 0x102*i).encode())
-    start_nops(dut)
+    await start_nops(dut)
     for i in range(24):
         if dut.uo_out[7].value == 1:
             break

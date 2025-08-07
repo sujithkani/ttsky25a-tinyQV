@@ -218,10 +218,13 @@ async def nops_loop(dut):
     while send_nops:
         await send_instr(dut, InstructionADDI(x0, x0, 0).encode())
 
-def start_nops(dut):
+async def start_nops(dut):
     global send_nops, nop_task
     send_nops = True
     nop_task = cocotb.start_soon(nops_loop(dut))
+
+    # This ensures that the nop task is actually started, so that it can be instantly stopped.
+    await Timer(2, "ps")
 
 async def stop_nops():
     global send_nops, nop_task
@@ -233,7 +236,7 @@ async def stop_nops():
 async def read_byte(dut, reg, expected_val):
   await send_instr(dut, InstructionSW(tp, reg, 0x18).encode())
 
-  start_nops(dut)
+  await start_nops(dut)
   for i in range(80):
       if dut.debug_uart_tx.value == 0:
           break

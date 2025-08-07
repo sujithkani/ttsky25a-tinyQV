@@ -32,7 +32,7 @@ class TinyQV:
         
         await test_util.set_all_outputs_to_peripheral(self.dut, self.peripheral_num)
 
-        test_util.start_nops(self.dut)
+        await test_util.start_nops(self.dut)
 
     # Write a value to a byte register in your design
     # reg is the address of the register in the range 0-15
@@ -47,7 +47,7 @@ class TinyQV:
             # Read a register in order to ensure the store is complete before returning
             assert await test_util.read_reg(self.dut, a1) == value
 
-        test_util.start_nops(self.dut)
+        await test_util.start_nops(self.dut)
 
     # Read the value of a byte register from your design
     # reg is the address of the register in the range 0-15
@@ -56,7 +56,7 @@ class TinyQV:
         await test_util.stop_nops()
         await test_util.send_instr(self.dut, InstructionLBU(a1, tp, self.base_address + reg).encode())
         val = await test_util.read_reg(self.dut, a1)
-        test_util.start_nops(self.dut)
+        await test_util.start_nops(self.dut)
         return val
 
     # Write a value to a byte register in your design
@@ -92,7 +92,7 @@ class TinyQV:
             # Read a register in order to ensure the store is complete before returning
             assert await test_util.read_reg(self.dut, a1) == value
 
-        test_util.start_nops(self.dut)
+        await test_util.start_nops(self.dut)
 
     # Read the value of a half word register from your design
     # reg is the address of the register in the range 0-15
@@ -101,7 +101,7 @@ class TinyQV:
         await test_util.stop_nops()
         await test_util.send_instr(self.dut, InstructionLHU(a1, tp, self.base_address + reg).encode())
         val = await test_util.read_reg(self.dut, a1)
-        test_util.start_nops(self.dut)
+        await test_util.start_nops(self.dut)
         return val
 
     # Write a value to a word register in your design
@@ -125,7 +125,7 @@ class TinyQV:
             # Read a register in order to ensure the store is complete before returning
             assert await test_util.read_reg(self.dut, a1) == value
 
-        test_util.start_nops(self.dut)
+        await test_util.start_nops(self.dut)
 
     # Read the value of a word register from your design
     # reg is the address of the register in the range 0-15
@@ -134,7 +134,7 @@ class TinyQV:
         await test_util.stop_nops()
         await test_util.send_instr(self.dut, InstructionLW(a1, tp, self.base_address + reg).encode())
         val = await test_util.read_reg(self.dut, a1)
-        test_util.start_nops(self.dut)
+        await test_util.start_nops(self.dut)
         return val
 
     # Check whether the user interrupt is asserted
@@ -142,5 +142,5 @@ class TinyQV:
         await test_util.stop_nops()
         await test_util.send_instr(self.dut, InstructionCSRRS(a1, x0, csrnames.mip).encode())
         val = await test_util.read_reg(self.dut, a1)
-        test_util.start_nops(self.dut)
+        await test_util.start_nops(self.dut)
         return (val & (1 << (16 + self.peripheral_num))) != 0
