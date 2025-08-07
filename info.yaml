@@ -54,6 +54,7 @@ project:
     - "user_peripherals/prism/latch_shift_reg.v"
     - "user_peripherals/prism/latch_loader.v"
     - "user_peripherals/prism/prism.v"
+    - "user_peripherals/prism/prism_sr_sit.v"
     - "user_peripherals/prism/prism_latch_sit.v"
     - "user_peripherals/prism/prism_latch_reg.v"
     - "user_peripherals/pwl_synth/pwl_synth.sv"

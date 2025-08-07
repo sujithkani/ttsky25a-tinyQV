@@ -113,7 +113,7 @@ module prism
   (
    // Timing inputs
    input   wire                  clk,              // System clock 
-   input   wire                  clk_div2,         // System clock / 2
+//   input   wire                  clk_div2,         // System clock / 2
    input   wire                  rst_n,            // TRUE when receiving Bit 0
 //   input   wire                  debug_reset,
    input   wire                  fsm_enable,       // Enable signal
@@ -128,8 +128,10 @@ module prism
    // ============================
    // Latch programming bus
    // ============================
+`ifndef SYNTH_FPGA
    input  wire [31:0]            latch_data,
    input  wire                   latch_wr,
+`endif
 
    // ============================
    // Debug bus for programming
@@ -229,6 +231,7 @@ module prism
    assign prism_rst_n = rst_n & fsm_enable;//~debug_reset;
 
    // Instantiate the Latch based SIT
+`ifndef SYNTH_FPGA
    prism_latch_sit
    #(
       .WIDTH   ( RAM_WIDTH     ),
@@ -252,6 +255,28 @@ module prism
       .raddr1                ( ram_raddr1       ),
       .rdata1                ( ram_dout         )
    );
+`else
+   prism_sr_sit
+   #(
+      .WIDTH   ( RAM_WIDTH     ),
+      .DEPTH   ( RAM_DEPTH     )
+    )
+   prism_latch_sit_i
+   (
+      .clk                   ( clk              ),
+      .rst_n                 ( rst_n            ),
+                                                        
+      // Periph bus interface                           
+      .debug_addr            ( debug_addr       ),
+      .debug_rdata           ( debug_rdata_ram  ),
+      .debug_wdata           ( debug_wdata      ),
+      .debug_wr              ( debug_wr         ),
+                                                       
+      // PRISM interface                               
+      .raddr1                ( ram_raddr1       ),
+      .rdata1                ( ram_dout         )
+   );
+`endif
 
    assign debug_rdata  = debug_rdata_prism;
    assign ram_raddr1   = curr_si;
@@ -321,7 +346,8 @@ module prism
    Clocked State Block for state machine SI
    =================================================================================
    */
-   always @(posedge clk_div2 or negedge prism_rst_n)
+   //always @(posedge clk_div2 or negedge prism_rst_n)
+   always @(posedge clk or negedge prism_rst_n)
    begin
       if (~prism_rst_n)
       begin
@@ -354,7 +380,8 @@ module prism
    Logic for loop_si
    =================================================================================
    */
-   always @(posedge clk_div2 or negedge prism_rst_n)
+   //always @(posedge clk_div2 or negedge prism_rst_n)
+   always @(posedge clk or negedge prism_rst_n)
    begin
       if (~prism_rst_n)
       begin
@@ -499,6 +526,7 @@ module prism
    Instantiate the debug_ctrl register
    ===================================================================================== 
    */
+`ifndef SYNTH_FPGA
    prism_latch_reg
    #(
       .WIDTH   ( W_DBG_CTRL )
@@ -511,6 +539,18 @@ module prism
       .data_in  ( latch_data[W_DBG_CTRL-1:0] ),
       .data_out ( debug_ctrl0                )
    );
+`else
+
+   reg  [W_DBG_CTRL-1:0]      debug_ctrl0_reg;
+   always @(posedge clk or negedge rst_n)
+      if (~rst_n)
+         debug_ctrl0_reg <= 'h0; 
+      else
+         if (debug_ctrl0_en && debug_wr)
+            debug_ctrl0_reg <= debug_wdata[W_DBG_CTRL-1:0];
+   assign debug_ctrl0 = debug_ctrl0_reg;
+
+`endif
    assign debug_ctrl0_en = INCLUDE_DEBUG && (debug_addr == 6'h4);
 
    /*
@@ -606,7 +646,8 @@ module prism
                        (debug_bp_en1 && !debug_break_active[1] && !debug_resume_pending && (debug_bp_si1 == next_si)) ||
                        (debug_halt_req & !debug_halt_req_p1);
 
-   always @(posedge clk_div2 or negedge prism_rst_n)
+   //always @(posedge clk_div2 or negedge prism_rst_n)
+   always @(posedge clk or negedge prism_rst_n)
    begin
       if (~prism_rst_n)
       begin

@@ -132,16 +132,22 @@ module tqvp_prism (
     wire                fifo_full;
     wire                fifo_empty;
     wire                latch_in_out;
+`ifndef SYNTH_FPGA
     reg   [31:0]        latch_data;
     reg                 latch_wr;
     reg                 latch_wr_p0;
+`else
+    wire  [31:0]        latch_data;
+    assign latch_data = data_in;
+`endif
     wire  [0:0]         cond_out;
-    wire                clk_div2;
-    reg                 clk_gate;
+//    wire                clk_div2;
+//    reg                 clk_gate;
 
     // =============================================================
     // Crate a divide by 2 clock using clock gate
     // =============================================================
+`ifdef DONT_COMPILE
     always @(negedge clk or negedge rst_n)
     begin
         if (~rst_n)
@@ -157,6 +163,7 @@ module tqvp_prism (
     sky130_fd_sc_hd__dlclkp_4 CG( .CLK(clk), .GCLK(clk_div2), .GATE(clk_gate) );
     /* verilator lint_on PINMISSING */
 `endif
+`endif
     
     // =============================================================
     // Instantiate the PRISM controller
@@ -168,7 +175,6 @@ module tqvp_prism (
     i_prism
     (
         .clk                ( clk               ),
-        .clk_div2           ( clk_div2          ),
         .rst_n              ( rst_n             ),
 
         .fsm_enable         ( prism_enable      ),
@@ -176,9 +182,11 @@ module tqvp_prism (
         .out_data           ( prism_out_data    ),
         .cond_out           ( cond_out          ),
                             
+`ifndef SYNTH_FPGA
         // Latch register control
         .latch_data         ( latch_data        ),
         .latch_wr           ( latch_wr          ),
+`endif
 
         .debug_addr         ( address           ),
         .debug_wr           ( prism_wr          ),
@@ -188,7 +196,7 @@ module tqvp_prism (
     );
 
     assign prism_wr = data_write_n != 2'b11;
-    assign prism_exec = prism_enable && !prism_halt;
+    assign prism_exec = prism_enable && !(prism_halt | prism_halt_r);
 
     genvar i;
     generate
@@ -231,7 +239,7 @@ module tqvp_prism (
     assign user_interrupt = prism_interrupt;
 
     assign shift_data     = shift_24_en ? (shift_dir ? count1[0] : count1[23]) : (shift_dir ? comm_data[0] : comm_data[7]);
-    assign fifo_write     = prism_out_data[OUT_COUNT1_LOAD] & fifo_24 & clk_gate;
+    assign fifo_write     = prism_out_data[OUT_COUNT1_LOAD] & fifo_24;// & clk_gate;
     assign fifo_push      = fifo_write && (fifo_count != 2'h2 || (fifo_count == 2'h2 && fifo_read));
     assign fifo_read      = fifo_24 && data_read_n == 2'b00 && address == 6'h19;
     assign fifo_full      = fifo_24 && fifo_count == 2'h2;
@@ -291,14 +299,17 @@ module tqvp_prism (
             prism_halt_r    <= 1'b0;
             host_in         <= 2'b0;
             comm_data       <= 8'h0;
+            `ifndef SYNTH_FPGA
             latch_wr        <= 1'b0;
             latch_wr_p0     <= 1'b0;
             latch_data      <= 32'h0;
+            `endif
             fifo_rd_ptr     <= 2'h0;
             fifo_count      <= 2'h0;
         end
         else
         begin
+            `ifndef SYNTH_FPGA
             // Create a delayed data_write signal for latches
             latch_wr_p0 <= prism_wr;
             latch_wr    <= latch_wr_p0;
@@ -306,6 +317,7 @@ module tqvp_prism (
             // Save data_in for latch and config writes
             if (prism_wr)
                 latch_data <= data_in;
+            `endif
 
             // Detect rising edge of HALT
             prism_halt_r <= prism_halt;
@@ -328,7 +340,7 @@ module tqvp_prism (
             // Latch comm_data
             if (address == 6'h18 && data_write_n != 2'b11)
                 comm_data <= data_in[7:0];
-            else if (prism_exec && shift_8 && clk_gate)
+            else if (prism_exec && shift_8)// && clk_gate)
                 comm_data <= shift_dir ? {shift_in, comm_data[7:1]}: {comm_data[6:0], shift_in};
             else if (load4 & prism_out_data[4])
                 case (fifo_wr_ptr)
@@ -359,7 +371,7 @@ module tqvp_prism (
                     else if (fifo_read && !fifo_write && fifo_count != 2'h0)
                         fifo_count <= fifo_count - 1;
                 end
-                else if (shift_24 && clk_gate && shift_count == 3'h7)
+                else if (shift_24 && shift_count == 3'h7)// && clk_gate)
                     fifo_count <= fifo_count == 2'h2 ? 2'h0 : fifo_count + 1;
             end
             else if (!prism_enable)
@@ -371,7 +383,8 @@ module tqvp_prism (
     end
 
     assign prism_rst_n = rst_n & prism_enable;
-    always @(posedge clk_div2 or negedge prism_rst_n)
+    //always @(posedge clk_div2 or negedge prism_rst_n)
+    always @(posedge clk or negedge prism_rst_n)
     begin
         if (!prism_rst_n)
         begin
@@ -384,6 +397,9 @@ module tqvp_prism (
         end
         else
         begin
+            if (prism_enable && !prism_halt_r)
+                latched_out <= uo_out_c;
+
             // Countdown to zero counter
             if (prism_exec)
             begin
@@ -419,7 +435,7 @@ module tqvp_prism (
                         fifo_wr_ptr <= fifo_wr_ptr + 1;
                 end
 
-                latched_out <= uo_out_c;
+//                latched_out <= uo_out_c;
 
                 // Count the number of shifts
                 if (shift_24 | shift_8)
@@ -452,35 +468,36 @@ module tqvp_prism (
     assign ctrl_reg_en  = address == 6'h00;
     assign count_reg_en = address == 6'h20;
 
-    wire [14:0]   ctrl_bits_in;
     wire [14:0]   ctrl_bits_out;
-
-    assign ctrl_bits_in[2:1]   = latch_data[1:0];   // shift_in_sel
-    assign ctrl_bits_in[4:3]   = latch_data[3:2];   // shift_out_sel
-    assign ctrl_bits_in[6:5]   = latch_data[5:4];   // cond_out_sel
-    assign ctrl_bits_in[7]     = latch_data[6];     // load4
-    assign ctrl_bits_in[8]     = latch_data[7];     // latch_in_out
-    assign ctrl_bits_in[14]    = latch_data[8];     // shift_en
-    assign ctrl_bits_in[9]     = latch_data[9];     // shift_dir
-    assign ctrl_bits_in[10]    = latch_data[10];    // shift_24_en
-    assign ctrl_bits_in[11]    = latch_data[11];    // fifo_24
-    assign ctrl_bits_in[12]    = latch_data[12];    // count2_dec
-    assign ctrl_bits_in[13]    = latch_data[30];    // PRISM enable
-    assign ctrl_bits_in[0]     = latch_data[13];    // latch5
-
-    assign shift_in_sel        = ctrl_bits_out[2:1];
-    assign shift_out_sel       = ctrl_bits_out[4:3];
-    assign cond_out_sel        = ctrl_bits_out[6:5];
-    assign load4               = ctrl_bits_out[7];
-    assign latch_in_out        = ctrl_bits_out[8];
+    assign shift_in_sel        = ctrl_bits_out[1:0];
+    assign shift_out_sel       = ctrl_bits_out[3:2];
+    assign cond_out_sel        = ctrl_bits_out[5:4];
+    assign load4               = ctrl_bits_out[6];
+    assign latch_in_out        = ctrl_bits_out[7];
+    assign shift_en            = ctrl_bits_out[8];
     assign shift_dir           = ctrl_bits_out[9];
     assign shift_24_en         = ctrl_bits_out[10];
     assign fifo_24             = ctrl_bits_out[11];
     assign count2_dec          = ctrl_bits_out[12];
-    assign prism_enable        = ctrl_bits_out[13];
-    assign shift_en            = ctrl_bits_out[14];
-    assign latch5              = ctrl_bits_out[0];
+    assign latch5              = ctrl_bits_out[13];
+    assign prism_enable        = ctrl_bits_out[14];
 
+    wire [14:0]   ctrl_bits_in;
+
+    assign ctrl_bits_in[1:0]   = latch_data[1:0];   // shift_in_sel
+    assign ctrl_bits_in[3:2]   = latch_data[3:2];   // shift_out_sel
+    assign ctrl_bits_in[5:4]   = latch_data[5:4];   // cond_out_sel
+    assign ctrl_bits_in[6]     = latch_data[6];     // load4
+    assign ctrl_bits_in[7]     = latch_data[7];     // latch_in_out
+    assign ctrl_bits_in[8]     = latch_data[8];     // shift_en
+    assign ctrl_bits_in[9]     = latch_data[9];     // shift_dir
+    assign ctrl_bits_in[10]    = latch_data[10];    // shift_24_en
+    assign ctrl_bits_in[11]    = latch_data[11];    // fifo_24
+    assign ctrl_bits_in[12]    = latch_data[12];    // count2_dec
+    assign ctrl_bits_in[13]    = latch_data[13];    // latch5
+    assign ctrl_bits_in[14]    = latch_data[30];    // PRISM enable
+
+`ifndef SYNTH_FPGA
     prism_latch_reg
     #(
         .WIDTH ( 15 )
@@ -506,6 +523,31 @@ module tqvp_prism (
         .data_in    ( latch_data                       ),
         .data_out   ( {count2_compare, count1_preload} )
     );
+`else
+    reg [31:0] count_preloads;
+    reg [14:0] ctrl_reg;
+    always @(posedge clk or negedge rst_n)
+    begin
+        if (~rst_n)
+        begin
+            ctrl_reg       <= 'h0;
+            count_preloads <= 'h0;
+        end
+        else
+        begin
+            // Write to control reg
+            if (ctrl_reg_en & prism_wr)
+                ctrl_reg <= ctrl_bits_in;
+
+            if (count_reg_en & prism_wr)
+                count_preloads <= data_in;
+        end
+    end
+
+    assign ctrl_bits_out = ctrl_reg;
+    assign {count2_compare, count1_preload} = count_preloads;
+
+`endif
 
 
 endmodule
