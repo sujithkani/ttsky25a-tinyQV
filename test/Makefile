@@ -13,6 +13,7 @@ USER_PERIPHERALS = \
 	baby_vga.test \
 	pwl_synth.test \
 	wdt.test \
+	RV2A03.test \
 
 .PHONY: all $(USER_PERIPHERALS)
 
