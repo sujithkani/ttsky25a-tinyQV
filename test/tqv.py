@@ -21,6 +21,9 @@ class TinyQV:
     # Reset the design, this reset will initialize TinyQV and connect
     # all inputs and outputs to your peripheral.
     async def reset(self, initial_ui_in=0):
+        # Ensure any previously running test is cleaned up
+        await test_util.stop_nops()
+
         await test_util.reset(self.dut, 1, initial_ui_in)
 
         # Should start reading flash after 1 cycle
