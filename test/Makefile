@@ -15,6 +15,7 @@ USER_PERIPHERALS = \
 	pwl_synth.test \
 	wdt.test \
 	tqvp_laurie_dwarf_line_table_accelerator.test \
+	pulse_transmitter.test \
 
 .PHONY: all $(USER_PERIPHERALS)
 
