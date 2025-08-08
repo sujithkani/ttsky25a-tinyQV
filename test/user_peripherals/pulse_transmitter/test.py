@@ -16,7 +16,14 @@ PERIPHERAL_NUM = 11
 
 MAX_DURATION = 255 # max duration you can put in the duration field
 MAX_PROGRAM_LEN = 128 # must be power of 2 as this also affects the rollover / wrapping
-MAX_PROGRAM_LOOP_LEN = 256 # the actual value set is MAX_PROGRAM_LOOP_LEN - 1
+
+MAX_PROGRAM_1BPS_LEN = 256 # must be power of 2 as this also affects the rollover / wrapping
+MAX_PROGRAM_2BPS_LEN = MAX_PROGRAM_1BPS_LEN >> 1 # divide by 2
+
+# Note that with 2bps,
+# you need to multiply program_start_index, program_end_index, program_end_loopback_index by 2
+
+MAX_PROGRAM_LOOP_LEN = 128 # the actual value set is MAX_PROGRAM_LOOP_LEN - 1
 MAX_TEST_INFINITE_LOOP_LEN = 100
 
 class Device:
@@ -44,24 +51,28 @@ class Device:
         self._clear_timer_interrupt = 0
         self._clear_loop_interrupt = 0
         self._clear_program_end_interrupt = 0
-        self._clear_program_counter_64_interrupt = 0
+        self._clear_program_counter_mid_interrupt = 0
         self._start_program = 0
         self._stop_program = 0
 
         self.config_timer_interrupt_en = 0
         self.config_loop_interrupt_en = 0
         self.config_program_end_interrupt_en = 0
-        self.config_program_counter_64_interrupt_en = 0
+        self.config_program_counter_mid_interrupt_en = 0
         self.config_loop_forever = 0
         self.config_idle_level = 0
         self.config_invert_output = 0
         self.config_carrier_en = 0
-        self.config_carrier_duration = 0
+        self.config_use_2bps = 0
+        self.config_low_symbol_0 = 0
+        self.config_low_symbol_1 = 0
+        self.config_high_symbol_0 = 0
+        self.config_high_symbol_1 = 0
 
         self.config_program_start_index = 0
-        self.config_program_end_index = 0 
-        self.config_program_loop_count = 0
+        self.config_program_end_index = 0
         self.config_program_loopback_index = 0
+        self.config_program_loop_count = 0
         
         self.config_main_low_duration_a = 0
         self.config_main_low_duration_b = 0
@@ -73,6 +84,8 @@ class Device:
         self.config_auxillary_duration_b = 0
         self.config_auxillary_prescaler = 0
         self.config_main_prescaler = 0
+
+        self.config_carrier_duration = 0
          
 
     async def write8_reg_0(self):
@@ -87,24 +100,28 @@ class Device:
         return self._clear_timer_interrupt \
             | (self._clear_loop_interrupt << 1) \
             | (self._clear_program_end_interrupt << 2) \
-            | (self._clear_program_counter_64_interrupt << 3) \
+            | (self._clear_program_counter_mid_interrupt << 3) \
             | (self._start_program << 4) \
             | (self._stop_program << 5) \
             | (self.config_timer_interrupt_en << 8) \
             | (self.config_loop_interrupt_en << 9) \
             | (self.config_program_end_interrupt_en << 10) \
-            | (self.config_program_counter_64_interrupt_en << 11) \
+            | (self.config_program_counter_mid_interrupt_en << 11) \
             | (self.config_loop_forever << 12) \
             | (self.config_idle_level << 13) \
             | (self.config_invert_output << 14) \
             | (self.config_carrier_en << 15) \
-            | (self.config_carrier_duration << 16)
-
+            | (self.config_use_2bps << 16) \
+            | (self.config_low_symbol_0 << 17) \
+            | (self.config_low_symbol_1 << 19) \
+            | (self.config_high_symbol_0 << 21) \
+            | (self.config_high_symbol_1 << 23) \
+            
     async def write32_reg_1(self):
         reg1 = self.config_program_start_index \
             | (self.config_program_end_index << 8) \
-            | (self.config_program_loop_count << 16) \
-            | (self.config_program_loopback_index << 24) \
+            | (self.config_program_loopback_index << 16) \
+            | (self.config_program_loop_count << 24) \
         
         await self.tqv.write_word_reg(4, reg1)
 
@@ -121,6 +138,11 @@ class Device:
         
         await self.tqv.write_word_reg(12, reg3)
 
+    async def write32_reg_4(self):
+        reg4 = self.config_carrier_duration
+        
+        await self.tqv.write_word_reg(16, reg4)
+
     """ Start the program """
     async def start_program(self):
         self._start_program = 1
@@ -134,11 +156,11 @@ class Device:
         self._stop_program = 0
 
     """ Clear the desired interrupts using 8 bit write """
-    async def clear_interrupts(self, clear_timer_interrupt = 1, clear_loop_interrupt = 1, clear_program_end_interrupt=1, clear_program_counter_64_interrupt=1):
+    async def clear_interrupts(self, clear_timer_interrupt = 1, clear_loop_interrupt = 1, clear_program_end_interrupt=1, clear_program_counter_mid_interrupt=1):
         self._clear_timer_interrupt = clear_timer_interrupt
         self._clear_loop_interrupt = clear_loop_interrupt
         self._clear_program_end_interrupt = clear_program_end_interrupt
-        self._clear_program_counter_64_interrupt = clear_program_counter_64_interrupt
+        self._clear_program_counter_mid_interrupt = clear_program_counter_mid_interrupt
         self._start_program = 0
         self._stop_program = 0
 
@@ -147,16 +169,16 @@ class Device:
         self._clear_timer_interrupt = 0
         self._clear_loop_interrupt = 0
         self._clear_program_end_interrupt = 0
-        self._clear_program_counter_64_interrupt = 0
+        self._clear_program_counter_mid_interrupt = 0
         self._start_program = 0
         self._stop_program = 0
 
     """ Clear the desired interrupts using 8 bit write """
-    async def clear_interrupts_using32(self, clear_timer_interrupt = 1, clear_loop_interrupt = 1, clear_program_end_interrupt=1, clear_program_counter_64_interrupt=1):
+    async def clear_interrupts_using32(self, clear_timer_interrupt = 1, clear_loop_interrupt = 1, clear_program_end_interrupt=1, clear_program_counter_mid_interrupt=1):
         self._clear_timer_interrupt = clear_timer_interrupt
         self._clear_loop_interrupt = clear_loop_interrupt
         self._clear_program_end_interrupt = clear_program_end_interrupt
-        self._clear_program_counter_64_interrupt = clear_program_counter_64_interrupt
+        self._clear_program_counter_mid_interrupt = clear_program_counter_mid_interrupt
         self._start_program = 0
         self._stop = 0
 
@@ -165,14 +187,16 @@ class Device:
         self._clear_timer_interrupt = 0
         self._clear_loop_interrupt = 0
         self._clear_program_end_interrupt = 0
-        self._clear_program_counter_64_interrupt = 0
+        self._clear_program_counter_mid_interrupt = 0
         self._start_program = 0
         self._stop_program = 0
 
     # for a symbol tuple[int, int], 
     # the first value is the duration selector
     # the second value is the transmit level
-    async def write_program(self, program: list[tuple[int, int]]):
+    async def write_program_2bps(self, program: list[tuple[int, int]]):
+        assert self.config_use_2bps
+
         # We did not check if the program is currently running, 
         # writing while program is running may have undefined behaviour
 
@@ -180,6 +204,7 @@ class Device:
         await self.write32_reg_1()
         await self.write32_reg_2()
         await self.write32_reg_3()
+        await self.write32_reg_4()
 
         word = 0
         count = 0
@@ -201,38 +226,126 @@ class Device:
         if i > 0:
             await self.tqv.write_word_reg(0b100000 | count, word)
 
+ 
+    async def write_program_1bps(self, program: list[int]):
+        assert not self.config_use_2bps
+
+        # We did not check if the program is currently running, 
+        # writing while program is running may have undefined behaviour
+
+        await self.write32_reg_0()
+        await self.write32_reg_1()
+        await self.write32_reg_2()
+        await self.write32_reg_3()
+        await self.write32_reg_4()
+
+        word = 0
+        count = 0
+        i = 0
+        
+        for single_bit_value in program:
+            word |= single_bit_value << i 
+            i += 1
+
+            if i == 32:
+                await self.tqv.write_word_reg(0b100000 | count, word)
+                word = 0
+                i = 0
+                count += 4
+
+        # Write the remaining bits
+        if i > 0:
+            await self.tqv.write_word_reg(0b100000 | count, word)
     
-    async def test_expected_waveform(self, program: list[tuple[int, int]]):
+    def _get_expected_from_symbol(self, symbol: int, use_auxillary: bool) -> dict:
+        """
+        Obtain the expected total duration and transmit level for a given 2 bit symbol.
+
+        Args:
+            symbol (int): The input 2 bit symbol
+            use_auxillary (bool): Whether to use the auxillary prescaler/duration
+
+        Returns:
+            dict:
+                - 'duration' (int): The expected total duration associated with the symbol.
+                - 'output' (int): The expected output level associated with the symbol.
+        """
+        symbol_duration_selector = symbol & 0b01
+        symbol_transmit_level = (symbol & 0b10) >> 1
+
+        if use_auxillary:
+            prescaler = self.config_auxillary_prescaler
+            if(symbol_duration_selector == 0):
+                duration = self.config_auxillary_duration_a
+            else:
+                duration = self.config_auxillary_duration_b
+        else:
+            prescaler = self.config_main_prescaler
+            match (symbol):
+                case 0: duration = self.config_main_low_duration_a
+                case 1: duration = self.config_main_low_duration_b
+                case 2: duration = self.config_main_high_duration_a
+                case 3: duration = self.config_main_high_duration_b
+
+        return {
+            'duration': (duration + 2) << prescaler,
+            'output': symbol_transmit_level ^ self.config_invert_output
+        }
+        
+    # In 2bps mode,
+    # each symbol entry is 2 bits, represented by a tuple of 1 bit each
+    async def test_expected_waveform_2bps(self, program: list[tuple[int, int]]):
+        assert len(program) <= MAX_PROGRAM_2BPS_LEN
+
+        # We pre-generate the duration and expected output level (before inversion) in a 2-tuple
+        waveform = []
+        for i, symbol_tuple in enumerate(program):
+            if i < 8 and (self.config_auxillary_mask & (1 << i)):
+                use_auxillary = True
+            else:
+                use_auxillary = False
+            
+            dict = self._get_expected_from_symbol((symbol_tuple[1] << 1 ) | symbol_tuple[0], use_auxillary)
+            
+            waveform.append((dict["duration"], dict["output"]))
+
+        await self._test_expected_waveform(waveform)
+
+    # In 1bps mode,
+    # each entry is 1 bit
+    async def test_expected_waveform_1bps(self, program: list[int]):
+        assert len(program) <= MAX_PROGRAM_1BPS_LEN
+        
+        # We pre-generate the duration and expected output level (before inversion) in a 2-tuple
+        # Note that we expand our program, so the len(waveform) is twice the len(program)
+        waveform = []
+        for i, single_bit_value in enumerate(program):
+            if(single_bit_value):
+                first_symbol = self.config_high_symbol_0
+                second_symbol = self.config_high_symbol_1
+            else:
+                first_symbol = self.config_low_symbol_0
+                second_symbol = self.config_low_symbol_1
+
+            if i < 8 and (self.config_auxillary_mask & (1 << i)):
+                use_auxillary = True
+            else:
+                use_auxillary = False
+
+            first_dict = self._get_expected_from_symbol(first_symbol, use_auxillary)
+            second_dict = self._get_expected_from_symbol(second_symbol, use_auxillary)
+            
+            waveform.append((first_dict["duration"], first_dict["output"]))
+            waveform.append((second_dict["duration"], second_dict["output"]))
+            
+        await self._test_expected_waveform(waveform)
+    
+    
+    # example waveform [(2, 1), (3, 0), (4, 1), (4, 1), (5, 0)] 
+    async def _test_expected_waveform(self, waveform: list[tuple[int, int]]):
         # config_carrier_en must be 0, generation of expected_waveform not supported with this parameter
         assert not self.config_carrier_en
 
-        waveform = []
-        for i, symbol in enumerate(program):
-            symbol_duration_selector = symbol[0]
-            symbol_transmit_level = symbol[1]
-            symbol_data = (symbol_transmit_level << 1 ) | symbol_duration_selector
-
-            if i < 8 and (self.config_auxillary_mask & (1 << i)):
-                prescaler = self.config_auxillary_prescaler
-                if(symbol_duration_selector == 0):
-                    duration = self.config_auxillary_duration_a
-                else:
-                    duration = self.config_auxillary_duration_b
-            else:
-                prescaler = self.config_main_prescaler
-                match (symbol_data):
-                    case 0: duration = self.config_main_low_duration_a
-                    case 1: duration = self.config_main_low_duration_b
-                    case 2: duration = self.config_main_high_duration_a
-                    case 3: duration = self.config_main_high_duration_b
-            
-            expected_output = symbol_transmit_level ^ self.config_invert_output
-            expected_duration = (duration + 2) << prescaler
-            waveform.append((expected_duration, expected_output))
-
-        # example waveform [(2, 1), (3, 0), (4, 1), (4, 1), (5, 0)] 
-
-         
         # lets start the test
         # the program must be already configured
         # Must run concurrently
@@ -244,9 +357,7 @@ class Device:
 
         #await RisingEdge(self.dut.test_harness.user_peripheral.valid_output)
 
-        # The logic for the program is written is a much different way than the verilog code,
-        # but it should achieve the same outcome
-
+        
         # when config_program_loop_count = 0, the program executes once
         # when config_program_loop_count = 1, the program executes twice
         # and so on...
@@ -258,31 +369,58 @@ class Device:
         
         waveform_len = len(waveform)
         output_valid = True
-        
-        program_counter = self.config_program_start_index
+
+        # We code the internal program counter a little differently in Python
+        # So instead of between 0 and 511 in the verilog, we use between 0 and 255
+        # In 2bps (2 bits per symbol) mode, program_counter is incremented by 2 each time (different from verilog)
+        # In 1bps (1 bits per symbol) mode, program_counter is incremented by 1 each time (different from verilog)
+
+        internal_program_counter = self.config_program_start_index
+
         while(output_valid):
-            assert program_counter < waveform_len # make sure don't access out of bounds
+            if (self.config_use_2bps):
+                assert (internal_program_counter >> 1) < waveform_len # make sure don't access out of bounds
+                assert internal_program_counter % 2 == 0 # should be a multiple of 2
 
-            duration = waveform[program_counter][0]
-            expected_level = waveform[program_counter][1]
-            
-            for i in range(duration): # check every cycle for thoroughness
-                assert self.dut.uo_out[4].value == expected_level
-                await ClockCycles(self.dut.clk, 1) 
+                duration = waveform[internal_program_counter >> 1][0]
+                expected_level = waveform[internal_program_counter >> 1][1]
 
-            if(program_counter == self.config_program_end_index):
+                for i in range(duration): # check every cycle for thoroughness
+                    assert self.dut.uo_out[4].value == expected_level
+                    await ClockCycles(self.dut.clk, 1) 
+            else:
+                assert internal_program_counter < waveform_len # make sure don't access out of bounds
+                duration = waveform[internal_program_counter * 2][0]
+                expected_level = waveform[internal_program_counter * 2][1]
+
+                for i in range(duration): # check every cycle for thoroughness
+                    assert self.dut.uo_out[4].value == expected_level
+                    await ClockCycles(self.dut.clk, 1) 
+
+                assert internal_program_counter < waveform_len # make sure don't access out of bounds
+                duration = waveform[internal_program_counter * 2 + 1][0]
+                expected_level = waveform[internal_program_counter * 2 + 1][1]
+
+                for i in range(duration): # check every cycle for thoroughness
+                    assert self.dut.uo_out[4].value == expected_level
+                    await ClockCycles(self.dut.clk, 1) 
+                    
+            if(internal_program_counter == self.config_program_end_index):
                 program_loop_counter -= 1
                 
                 if(program_loop_counter > 0):
-                    program_counter = self.config_program_loopback_index
+                    internal_program_counter = self.config_program_loopback_index
                 else:
                     output_valid = False
             else:
-                program_counter += 1
-
+                if (self.config_use_2bps):
+                    internal_program_counter += 2
+                else:
+                    internal_program_counter += 1
+                
                 # Simulate rollover / wrapping
-                if(program_counter >= MAX_PROGRAM_LEN):
-                    program_counter = 0
+                if(internal_program_counter >= MAX_PROGRAM_1BPS_LEN):
+                    internal_program_counter = 0
         
         if(not self.config_loop_forever): # do not check if config_loop_forever is enabled
             # lets check the idle state is correct for the next n number of cycles for good measure
@@ -295,176 +433,371 @@ class Device:
                 assert self.dut.uo_out[4].value == (self.config_idle_level ^ self.config_invert_output)
                 await ClockCycles(self.dut.clk, 1)
 
-# Basic test
+#  Simulate Pulse Distance Encoding
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def basic_test1(dut):
+async def encoded_1bps_test1(dut):
     device = Device(dut)
     await device.init()
 
-    program = [(0, 1)]
-
+    program = [1, 0]
+    
     device.config_program_end_index = len(program) - 1
     device.config_main_high_duration_a = 0
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    # Note (1, 0) means 0b01, I know.... :(
+
+    # A low bit indicates the following symbol sequence: [(0, 1), (0, 0)]
+    device.config_low_symbol_0 = 0b10
+    device.config_low_symbol_1 = 0b00
+    
+    # A high bit indicates the following symbol sequence: [(0, 1), (1, 0)]
+    device.config_high_symbol_0 = 0b10
+    device.config_high_symbol_1 = 0b01
+    
+    device.config_main_low_duration_a = 5
+    device.config_main_low_duration_b = 10 # longer
+
+    device.config_main_high_duration_a = 5
+    #device.config_main_high_duration_b is unused
+
+    await device.write_program_1bps(program)
+    await device.test_expected_waveform_1bps(program)
+
+# Simulate Pulse Distance Encoding
+@cocotb.test(timeout_time=2, timeout_unit="ms")
+async def encoded_1bps_test2(dut):
+    device = Device(dut)
+    await device.init()
+
+    program = [1, 0, 0, 0, 1, 1, 1, 0, 1]
+    
+    device.config_program_end_index = len(program) - 1
+    device.config_main_high_duration_a = 0
+
+    # Note (1, 0) means 0b01, I know.... :(
+
+    # A low bit indicates the following symbol sequence: [(0, 1), (0, 0)]
+    device.config_low_symbol_0 = 0b10
+    device.config_low_symbol_1 = 0b00
+    
+    # A high bit indicates the following symbol sequence: [(0, 1), (1, 0)]
+    device.config_high_symbol_0 = 0b10
+    device.config_high_symbol_1 = 0b01
+    
+    device.config_main_low_duration_a = 5
+    device.config_main_low_duration_b = 10 # longer
+
+    device.config_main_high_duration_a = 5
+    #device.config_main_high_duration_b is unused
+
+    await device.write_program_1bps(program)
+    await device.test_expected_waveform_1bps(program)
+
+# Simulate Pulse Distance Encoding, with initial long header pulse
+@cocotb.test(timeout_time=2, timeout_unit="ms")
+async def encoded_1bps_test3(dut):
+    device = Device(dut)
+    await device.init()
+
+    program = [1, 1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0]
+    
+    device.config_program_end_index = len(program) - 1
+    device.config_main_high_duration_a = 0
+
+    # Note (1, 0) means 0b01, I know.... :(
+
+    # A low bit indicates the following symbol sequence: [(0, 1), (0, 0)]
+    device.config_low_symbol_0 = 0b10
+    device.config_low_symbol_1 = 0b00
+    
+    # A high bit indicates the following symbol sequence: [(0, 1), (1, 0)]
+    device.config_high_symbol_0 = 0b10
+    device.config_high_symbol_1 = 0b01
+    
+    device.config_main_low_duration_a = 5
+    device.config_main_low_duration_b = 10 # longer
+
+    device.config_main_high_duration_a = 5
+    #device.config_main_high_duration_b is unused
+    
+    device.config_auxillary_mask = 0b0000001
+    device.config_auxillary_duration_a = 50
+    device.config_auxillary_duration_b = 25
+    device.config_auxillary_prescaler = 2
+
+    await device.write_program_1bps(program)
+    await device.test_expected_waveform_1bps(program)
+
+# Simulate Pulse Width Encoding
+@cocotb.test(timeout_time=2, timeout_unit="ms")
+async def encoded_1bps_test4(dut):
+    device = Device(dut)
+    await device.init()
+
+    program = [1, 0, 0, 0, 1, 1, 1, 0, 1]
+    
+    device.config_program_end_index = len(program) - 1
+    device.config_main_high_duration_a = 0
+
+    # Note (1, 0) means 0b01, I know.... :(
+
+    device.config_low_symbol_0 = 0b10
+    device.config_low_symbol_1 = 0b00
+    
+    device.config_high_symbol_0 = 0b11
+    device.config_high_symbol_1 = 0b00
+    
+    device.config_main_low_duration_a = 5
+    #device.config_main_low_duration_b = is unused
+
+    device.config_main_high_duration_a = 5
+    device.config_main_high_duration_b = 10
+
+    await device.write_program_1bps(program)
+    await device.test_expected_waveform_1bps(program)
+
+# Simulate Manchester Encoding
+@cocotb.test(timeout_time=2, timeout_unit="ms")
+async def encoded_1bps_test5(dut):
+    device = Device(dut)
+    await device.init()
+
+    program = [1, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1]
+    
+    device.config_program_end_index = len(program) - 1
+    device.config_main_high_duration_a = 0
+
+    # Note (1, 0) means 0b01, I know.... :(
+
+    # Falling from 0 to 1
+    device.config_low_symbol_0 = 0b10
+    device.config_low_symbol_1 = 0b00
+    
+    # Rising from 0 to 1
+    device.config_high_symbol_0 = 0b00
+    device.config_high_symbol_1 = 0b10
+    
+    device.config_main_low_duration_a = 0
+    #device.config_main_low_duration_b = is unused
+
+    device.config_main_high_duration_a = 0
+    # device.config_main_high_duration_b is unused
+
+    await device.write_program_1bps(program)
+    await device.test_expected_waveform_1bps(program)
+
+# Simulate WS2812B timings to display cyan colour
+# There are different timings online, so I just settled on this:
+# T0H -> 350 ns
+# T1H -> 800 ns
+# T0L -> 800 ns
+# T1H -> 350 ns
+# Assuming we are running at 64 MHz, we will get a good 15.625 ns resolution
+@cocotb.test(timeout_time=2, timeout_unit="ms")
+async def encoded_1bps_test5(dut):
+    device = Device(dut)
+    await device.init()
+
+    program = [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1]
+    
+    device.config_program_end_index = len(program) - 1
+
+    device.config_low_symbol_0 = 0b10
+    device.config_low_symbol_1 = 0b00
+    
+    device.config_high_symbol_0 = 0b11
+    device.config_high_symbol_1 = 0b01
+    
+    device.config_main_low_duration_a = 52 # Target 350ns, actual 343.75 ns
+    device.config_main_low_duration_b = 20  # Target 850ns, actual 843.75 ns
+
+    device.config_main_high_duration_a = 20  # Target 800ns, actual 843.75 ns
+    device.config_main_high_duration_b = 52  # Target 350ns, actual 343.75 ns
+
+    await device.write_program_1bps(program)
+    await device.test_expected_waveform_1bps(program)
 
 # Basic test
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def basic_test2(dut):
+async def basic_2bps_test1(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1)]
 
-    device.config_program_end_index = len(program) - 1
-    device.config_main_high_duration_a = 157
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
+    device.config_main_high_duration_a = 0
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def basic_test3(dut):
+async def basic_2bps_test2(dut):
+    device = Device(dut)
+    await device.init()
+
+    program = [(0, 1)]
+
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
+    device.config_main_high_duration_a = 157
+
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
+
+# Basic test
+@cocotb.test(timeout_time=2, timeout_unit="ms")
+async def basic_2bps_test3(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0), (1, 1), (1, 0)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 2
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 3
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test with output inverted
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def basic_test4(dut):
+async def basic_2bps_test4(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0), (1, 1), (1, 0)]
     
+    device.config_use_2bps = 1
     device.config_invert_output = 1
-    device.config_program_end_index = len(program) - 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 3
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 2
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def basic_test5(dut):
+async def basic_2bps_test5(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0), (1, 1), (1, 1), (1, 0)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_a = 13
     device.config_main_low_duration_b = 34
     device.config_main_high_duration_a = 10
     device.config_main_high_duration_b = 10
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def basic_test6(dut):
+async def basic_2bps_test6(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0), (1, 1), (1, 1), (0, 0), (0, 0), (1, 0), (0, 1)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test with idle level
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def basic_test7(dut):
+async def basic_2bps_test7(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0), (1, 1), (1, 1), (0, 0), (0, 0), (1, 0), (0, 1)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_idle_level = 1
     
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test with prescaler
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def basic_test8(dut):
+async def basic_2bps_test8(dut):
     device = Device(dut)
     await device.init()
 
     program = [(1, 0), (0, 1), (0, 0), (1, 1), (1, 0)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_a = 2
     device.config_main_low_duration_b = 0
     device.config_main_high_duration_a = 4
     device.config_main_high_duration_b = 6
     device.config_main_prescaler = 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test with prescaler
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def basic_test9(dut):
+async def basic_2bps_test9(dut):
     device = Device(dut)
     await device.init()
 
     program = [(1, 0), (0, 1), (0, 0), (1, 1), (1, 0)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_a = 2
     device.config_main_low_duration_b = 0
     device.config_main_high_duration_a = 4
     device.config_main_high_duration_b = 6
     device.config_main_prescaler = 2
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test with bigger prescaler
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def basic_test10(dut):
+async def basic_2bps_test10(dut):
     device = Device(dut)
     await device.init()
 
     program = [(1, 0), (0, 1), (0, 0), (1, 1), (1, 0)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 3
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 2
     device.config_main_prescaler = 9
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test to test that config_program_end_index is respected
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def basic_test11(dut):
+async def basic_2bps_test11(dut):
     device = Device(dut)
     await device.init()
 
     program = [(1, 0), (0, 1), (0, 0), (1, 1), (1, 0)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 3
     device.config_main_high_duration_a = 0
@@ -472,34 +805,35 @@ async def basic_test11(dut):
 
     # fill in the rest of the buffer with some data
     program_with_extras = [(1, 0), (0, 1), (0, 0), (1, 1), (1, 0), (1, 0), (0, 1), (0, 0), (1, 1), (1, 0), (0, 0), (1, 1), (1, 0), (1, 0), (0, 1)]
-    await device.write_program(program_with_extras)
+    await device.write_program_2bps(program_with_extras)
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test to test that config_program_start_index is respected
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def basic_test12(dut):
+async def basic_2bps_test12(dut):
     device = Device(dut)
     await device.init()
 
     program = [(1, 0), (0, 1), (0, 0), (1, 1), (1, 0)]
-    
-    device.config_program_end_index = len(program) - 1
-    device.config_program_start_index = 3
+
+    device.config_use_2bps = 1    
+    device.config_program_end_index = (len(program) - 1) * 2
+    device.config_program_start_index = 3 * 2
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 3
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 2
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test rollover / wrapping test
 # It starts at config_program_start_index, rolls over, 
 # and terminates at config_program_end_index without looping
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def basic_test13(dut):
+async def basic_2bps_test13(dut):
     device = Device(dut)
     await device.init()
 
@@ -513,20 +847,21 @@ async def basic_test13(dut):
         transmit_level = random.randint(0, 1)     # 1-bit transmit level: 0 or 1
         program.append((duration_selector, transmit_level))
     
-    device.config_program_end_index = len(program) - 1
-    device.config_program_start_index = 77
-    device.config_program_end_index = 33
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
+    device.config_program_start_index = 77 * 2
+    device.config_program_end_index = 33 * 2
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 3
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 2
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test MAX_PROGRAM_LEN number of symbols
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def basic_test14(dut):
+async def basic_2bps_test14(dut):
     device = Device(dut)
     await device.init()
 
@@ -540,18 +875,19 @@ async def basic_test14(dut):
         transmit_level = random.randint(0, 1)     # 1-bit transmit level: 0 or 1
         program.append((duration_selector, transmit_level))
     
-    device.config_program_end_index = program_len - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
     device.config_main_high_duration_a = 4
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test MAX_PROGRAM_LEN number of symbols with prescaler
 @cocotb.test(timeout_time=11, timeout_unit="ms")
-async def basic_test15(dut):
+async def basic_2bps_test15(dut):
     device = Device(dut)
     await device.init()
 
@@ -565,25 +901,27 @@ async def basic_test15(dut):
         transmit_level = random.randint(0, 1)     # 1-bit transmit level: 0 or 1
         program.append((duration_selector, transmit_level))
     
-    device.config_program_end_index = program_len - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
     device.config_main_high_duration_a = 4
     device.config_main_prescaler = 3
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test with infinite loop
 @cocotb.test(timeout_time=11, timeout_unit="ms")
-async def basic_test16(dut):
+async def basic_2bps_test16(dut):
     device = Device(dut)
     await device.init()
 
     program = [(1, 0), (0, 1), (0, 0), (1, 1), (1, 0)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
@@ -591,180 +929,190 @@ async def basic_test16(dut):
     device.config_main_prescaler = 3
     device.config_loop_forever = 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Basic test with MAX_DURATION
 @cocotb.test(timeout_time=11, timeout_unit="ms")
-async def basic_test17(dut):
+async def basic_2bps_test17(dut):
     device = Device(dut)
     await device.init()
 
     program = [(1, 0), (0, 1), (0, 0), (1, 1), (1, 0)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = MAX_DURATION
     device.config_main_low_duration_a = 242
     device.config_main_high_duration_b = MAX_DURATION
     device.config_main_high_duration_a = 193
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 
 # Advanced test with looping a certain number of counts
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test1(dut):
+async def advanced_2bps_test1(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
     device.config_main_high_duration_a = 4
     device.config_program_loop_count = 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping a certain number of counts
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test2(dut):
+async def advanced_2bps_test2(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
     device.config_main_high_duration_a = 4
     device.config_program_loop_count = 2
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping a certain number of counts
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test3(dut):
+async def advanced_2bps_test3(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
     device.config_main_high_duration_a = 4
     device.config_program_loop_count = 45
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping MAX_PROGRAM_LOOP_LEN times
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test4(dut):
+async def advanced_2bps_test4(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
     device.config_main_high_duration_a = 4
     device.config_program_loop_count = MAX_PROGRAM_LOOP_LEN - 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping a certain number of counts
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test5(dut):
+async def advanced_2bps_test5(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
     device.config_main_high_duration_a = 4
     device.config_program_loop_count = 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping a certain number of counts
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test6(dut):
+async def advanced_2bps_test6(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
     device.config_main_high_duration_a = 4
     device.config_program_loop_count = 2
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping a certain number of counts
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test7(dut):
+async def advanced_2bps_test7(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
     device.config_main_high_duration_a = 4
     device.config_program_loop_count = 45
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping MAX_PROGRAM_LOOP_LEN times
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test8(dut):
+async def advanced_2bps_test8(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
     device.config_main_high_duration_a = 4
     device.config_program_loop_count = MAX_PROGRAM_LOOP_LEN - 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping a certain number of counts with prescaler
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test9(dut):
+async def advanced_2bps_test9(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
@@ -772,18 +1120,19 @@ async def advanced_test9(dut):
     device.config_program_loop_count = 1
     device.config_main_prescaler = 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping a certain number of counts with prescaler
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test10(dut):
+async def advanced_2bps_test10(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
@@ -791,18 +1140,19 @@ async def advanced_test10(dut):
     device.config_program_loop_count = 2
     device.config_main_prescaler = 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping a certain number of counts with prescaler
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test11(dut):
+async def advanced_2bps_test11(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
@@ -810,18 +1160,19 @@ async def advanced_test11(dut):
     device.config_program_loop_count = 45
     device.config_main_prescaler = 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping MAX_PROGRAM_LOOP_LEN times with prescaler
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test12(dut):
+async def advanced_2bps_test12(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
@@ -829,18 +1180,19 @@ async def advanced_test12(dut):
     device.config_program_loop_count = MAX_PROGRAM_LOOP_LEN - 1
     device.config_main_prescaler = 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping a certain number of counts with prescaler
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test13(dut):
+async def advanced_2bps_test13(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
@@ -848,18 +1200,19 @@ async def advanced_test13(dut):
     device.config_program_loop_count = 1
     device.config_main_prescaler = 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping a certain number of counts with prescaler
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test14(dut):
+async def advanced_2bps_test14(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
@@ -867,18 +1220,19 @@ async def advanced_test14(dut):
     device.config_program_loop_count = 2
     device.config_main_prescaler = 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping a certain number of counts with prescaler
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test15(dut):
+async def advanced_2bps_test15(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
@@ -886,30 +1240,31 @@ async def advanced_test15(dut):
     device.config_program_loop_count = 45
     device.config_main_prescaler = 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping MAX_PROGRAM_LOOP_LEN times
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test16(dut):
+async def advanced_2bps_test16(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
     device.config_main_high_duration_a = 4
     device.config_program_loop_count = MAX_PROGRAM_LOOP_LEN - 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping a certain number of counts, with MAX_PROGRAM_LEN number of symbols
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def advanced_test17(dut):
+async def advanced_2bps_test17(dut):
     device = Device(dut)
     await device.init()
 
@@ -923,20 +1278,20 @@ async def advanced_test17(dut):
         transmit_level = random.randint(0, 1)     # 1-bit transmit level: 0 or 1
         program.append((duration_selector, transmit_level))
     
-    device.config_program_end_index = program_len - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 1
     device.config_main_low_duration_a = 2
     device.config_main_high_duration_b = 3
     device.config_main_high_duration_a = 4
     device.config_program_loop_count = 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping a certain number of counts, with MAX_PROGRAM_LEN number of symbols
-# This may take a long time to simulate
 @cocotb.test(timeout_time=15, timeout_unit="ms")
-async def advanced_test18(dut):
+async def advanced_2bps_test18(dut):
     device = Device(dut)
     await device.init()
 
@@ -950,20 +1305,20 @@ async def advanced_test18(dut):
         transmit_level = random.randint(0, 1)     # 1-bit transmit level: 0 or 1
         program.append((duration_selector, transmit_level))
     
-    device.config_program_end_index = program_len - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 0
     device.config_main_low_duration_a = 1
     device.config_main_high_duration_b = 2
     device.config_main_high_duration_a = 0
-    device.config_program_loop_count = 150
+    device.config_program_loop_count = 23
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with looping a MAX_PROGRAM_LOOP_LEN times, with MAX_PROGRAM_LEN number of symbols
-# This may take a long time to simulate
 @cocotb.test(timeout_time=15, timeout_unit="ms")
-async def advanced_test19(dut):
+async def advanced_2bps_test19(dut):
     device = Device(dut)
     await device.init()
 
@@ -977,25 +1332,27 @@ async def advanced_test19(dut):
         transmit_level = random.randint(0, 1)     # 1-bit transmit level: 0 or 1
         program.append((duration_selector, transmit_level))
     
-    device.config_program_end_index = program_len - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 0
     device.config_main_low_duration_a = 1
     device.config_main_high_duration_b = 2
     device.config_main_high_duration_a = 0
     device.config_program_loop_count = MAX_PROGRAM_LOOP_LEN - 1
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with auxillary duration
 @cocotb.test(timeout_time=15, timeout_unit="ms")
-async def advanced_test20(dut):
+async def advanced_2bps_test20(dut):
     device = Device(dut)
     await device.init()
 
     program = [(1, 0), (0, 1), (0, 0), (1, 1), (1, 0), (1, 0), (0, 1), (0, 0), (1, 1), (1, 0), (0, 0), (1, 1), (1, 0), (1, 0), (0, 1)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 0
     device.config_main_low_duration_a = 1
     device.config_main_high_duration_b = 2
@@ -1004,18 +1361,19 @@ async def advanced_test20(dut):
     device.config_auxillary_duration_b = 98
     device.config_auxillary_mask = 0b10101010
      
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with auxillary duration and auxillary prescaler
 @cocotb.test(timeout_time=15, timeout_unit="ms")
-async def advanced_test21(dut):
+async def advanced_2bps_test21(dut):
     device = Device(dut)
     await device.init()
 
     program = [(1, 0), (0, 1), (0, 0), (1, 1), (1, 0), (1, 0), (0, 1), (0, 0), (1, 1), (1, 0), (0, 0), (1, 1), (1, 0), (1, 0), (0, 1)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 0
     device.config_main_low_duration_a = 1
     device.config_main_high_duration_b = 2
@@ -1025,18 +1383,19 @@ async def advanced_test21(dut):
     device.config_auxillary_prescaler = 1
     device.config_auxillary_mask = 0b10101010
      
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Advanced test with auxillary duration and larger auxillary prescaler
 @cocotb.test(timeout_time=15, timeout_unit="ms")
-async def advanced_test22(dut):
+async def advanced_2bps_test22(dut):
     device = Device(dut)
     await device.init()
 
     program = [(1, 0), (0, 1), (0, 0), (1, 1), (1, 0), (1, 0), (0, 1), (0, 0), (1, 1), (1, 0), (0, 0), (1, 1), (1, 0), (1, 0), (0, 1)]
 
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_b = 0
     device.config_main_low_duration_a = 1
     device.config_main_high_duration_b = 2
@@ -1046,73 +1405,76 @@ async def advanced_test22(dut):
     device.config_auxillary_prescaler = 6
     device.config_auxillary_mask = 0b10101010
      
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
-# Elite test with looping and config_program_loopback_index set to exactly the program_len - 1
-# So it should run from 0 to len(program) - 1, then the last symbol is repeatedly sent
+# Elite test with looping and config_program_loopback_index set to exactly the (len(program) - 1) * 2
+# So it should run from 0 to (len(program) - 1) * 2, then the last symbol is repeatedly sent
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def elite_test1(dut):
+async def elite_2bps_test1(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0), (1, 0), (1, 0), (0, 1), (0, 0), (1, 1), (1, 0)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 3
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 2
     device.config_program_loop_count = 10
-    device.config_program_loopback_index = len(program) - 1
+    device.config_program_loopback_index = (len(program) - 1) * 2
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
-# Elite test with looping and config_program_loopback_index set to exactly the program_len - 2
-# So it should run from 0 to len(program) - 1, then the last 2 symbols is repeatedly sent
+# Elite test with looping and config_program_loopback_index set to exactly the (len(program) - 2) * 2
+# So it should run from 0 to (len(program) - 1) * 2 then the last 2 symbols is repeatedly sent
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def elite_test2(dut):
+async def elite_2bps_test2(dut):
+    device = Device(dut)
+    await device.init()
+    
+    program = [(0, 1), (0, 0), (1, 0), (1, 0), (0, 1), (0, 0), (1, 1), (1, 0)]
+    
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
+    device.config_main_low_duration_a = 1
+    device.config_main_low_duration_b = 3
+    device.config_main_high_duration_a = 0
+    device.config_main_high_duration_b = 2
+    device.config_program_loop_count = 10
+    device.config_program_loopback_index = (len(program) - 2) * 2
+
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
+
+# Elite test with looping and config_program_loopback_index set to exactly to 1 * 2
+# So it should run from 0 to (len(program) - 1) * 2, then the last len(program) - 1 number of symbols is repeatedly sent
+@cocotb.test(timeout_time=2, timeout_unit="ms")
+async def elite_2bps_test3(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0), (1, 0), (1, 0), (0, 1), (0, 0), (1, 1), (1, 0)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 3
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 2
     device.config_program_loop_count = 10
-    device.config_program_loopback_index = len(program) - 2
+    device.config_program_loopback_index = 1 * 2
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
-# Elite test with looping and config_program_loopback_index set to exactly to 1
-# So it should run from 0 to len(program) - 1, then the last len(program) - 1 number of symbols is repeatedly sent
+# Elite test with looping and config_program_loopback_index set to exactly the (len(program) - 1) * 2, with MAX_PROGRAM_LEN number of symbols
+# So it should run from 0 to (len(program) - 1) * 2, then the last symbol is repeatedly sent
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def elite_test3(dut):
-    device = Device(dut)
-    await device.init()
-
-    program = [(0, 1), (0, 0), (1, 0), (1, 0), (0, 1), (0, 0), (1, 1), (1, 0)]
-    
-    device.config_program_end_index = len(program) - 1
-    device.config_main_low_duration_a = 1
-    device.config_main_low_duration_b = 3
-    device.config_main_high_duration_a = 0
-    device.config_main_high_duration_b = 2
-    device.config_program_loop_count = 10
-    device.config_program_loopback_index = 1
-
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
-
-# Elite test with looping and config_program_loopback_index set to exactly the program_len - 1, with MAX_PROGRAM_LEN number of symbols
-# So it should run from 0 to len(program) - 1, then the last symbol is repeatedly sent
-@cocotb.test(timeout_time=2, timeout_unit="ms")
-async def elite_test4(dut):
+async def elite_2bps_test4(dut):
     device = Device(dut)
     await device.init()
 
@@ -1126,21 +1488,22 @@ async def elite_test4(dut):
         transmit_level = random.randint(0, 1)     # 1-bit transmit level: 0 or 1
         program.append((duration_selector, transmit_level))
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 3
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 2
     device.config_program_loop_count = 55
-    device.config_program_loopback_index = len(program) - 1
+    device.config_program_loopback_index = (len(program) - 1) * 2
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
-# Elite test with looping and config_program_loopback_index set to exactly the program_len - 2, with MAX_PROGRAM_LEN number of symbols
-# So it should run from 0 to len(program) - 1, then the last 2 symbols is repeatedly sent
+# Elite test with looping and config_program_loopback_index set to exactly the (len(program) - 2) * 2, with MAX_PROGRAM_LEN number of symbols
+# So it should run from 0 to (len(program) - 1) * 2 then the last 2 symbols is repeatedly sent
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def elite_test5(dut):
+async def elite_2bps_test5(dut):
     device = Device(dut)
     await device.init()
 
@@ -1154,23 +1517,24 @@ async def elite_test5(dut):
         transmit_level = random.randint(0, 1)     # 1-bit transmit level: 0 or 1
         program.append((duration_selector, transmit_level))
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 3
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 2
     device.config_program_loop_count = 55
-    device.config_program_loopback_index = len(program) - 2
+    device.config_program_loopback_index = (len(program) - 2) * 2
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
  
 
 # Elite test with rollover / wrapping, with auxillary prescaler and auxillary duration
 # It starts at config_program_start_index, rolls over,
 # and terminates at config_program_end_index without looping
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def elite_test6(dut):
+async def elite_2bps_test6(dut):
     device = Device(dut)
     await device.init()
 
@@ -1184,8 +1548,9 @@ async def elite_test6(dut):
         transmit_level = random.randint(0, 1)     # 1-bit transmit level: 0 or 1
         program.append((duration_selector, transmit_level))
     
-    device.config_program_start_index = 100
-    device.config_program_end_index = 33
+    device.config_use_2bps = 1
+    device.config_program_start_index = 100 * 2
+    device.config_program_end_index = 33 * 2
     device.config_main_low_duration_a = 15
     device.config_main_low_duration_b = 35
     device.config_main_high_duration_a = 10
@@ -1195,14 +1560,14 @@ async def elite_test6(dut):
     device.config_auxillary_duration_a = 50
     device.config_auxillary_prescaler = 3
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Elite test with rollover / wrapping, with auxillary prescaler and auxillary duration
 # It starts at config_program_start_index, rolls over,
 # and terminates at config_program_end_index without looping
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def elite_test7(dut):
+async def elite_2bps_test7(dut):
     device = Device(dut)
     await device.init()
 
@@ -1216,8 +1581,9 @@ async def elite_test7(dut):
         transmit_level = random.randint(0, 1)     # 1-bit transmit level: 0 or 1
         program.append((duration_selector, transmit_level))
     
-    device.config_program_start_index = 100
-    device.config_program_end_index = 33
+    device.config_use_2bps = 1
+    device.config_program_start_index = 100 * 2
+    device.config_program_end_index = 33 * 2
     device.config_main_low_duration_a = 15
     device.config_main_low_duration_b = 35
     device.config_main_high_duration_a = 10
@@ -1227,13 +1593,13 @@ async def elite_test7(dut):
     device.config_auxillary_duration_a = 50
     device.config_auxillary_prescaler = 3
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
 # Interrupt disable test - do not enable interrupts,
 # but we loop, have program counter past 64
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def interrupt_test1(dut):
+async def interrupt_2bps_test1(dut):
     device = Device(dut)
     await device.init()
 
@@ -1245,35 +1611,37 @@ async def interrupt_test1(dut):
         transmit_level = random.randint(0, 1)     # 1-bit transmit level: 0 or 1
         program.append((duration_selector, transmit_level))
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 2
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 3
     device.config_program_loop_count = 4
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
     assert not await device.tqv.is_interrupt_asserted()
 
 # Program end interrupt test, using 8 bit write to clear
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def interrupt_test2(dut):
+async def interrupt_2bps_test2(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0), (1, 1), (1, 0)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_program_end_interrupt_en = 1
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 2
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 3
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
     assert await device.tqv.is_interrupt_asserted()
 
@@ -1281,7 +1649,7 @@ async def interrupt_test2(dut):
         clear_timer_interrupt = 1,
         clear_loop_interrupt = 1,
         clear_program_end_interrupt = 0,  # Means no effect (don't clear program end interrupt)
-        clear_program_counter_64_interrupt = 1
+        clear_program_counter_mid_interrupt = 1
     )
     # there should be no effect, program end interrupt interrupt should not be cleared
     assert await device.tqv.is_interrupt_asserted()
@@ -1290,28 +1658,29 @@ async def interrupt_test2(dut):
         clear_timer_interrupt = 0,
         clear_loop_interrupt = 0,
         clear_program_end_interrupt = 1,
-        clear_program_counter_64_interrupt = 0
+        clear_program_counter_mid_interrupt = 0
     )
 
     assert not await device.tqv.is_interrupt_asserted()
 
 # Program end interrupt test using 32 bit write to clear
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def interrupt_test3(dut):
+async def interrupt_2bps_test3(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0), (1, 1), (1, 0)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_program_end_interrupt_en = 1
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 2
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 3
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
     assert await device.tqv.is_interrupt_asserted()
 
@@ -1319,7 +1688,7 @@ async def interrupt_test3(dut):
         clear_timer_interrupt = 1,
         clear_loop_interrupt = 1,
         clear_program_end_interrupt = 0, # Means no effect (don't clear timer interrupt)
-        clear_program_counter_64_interrupt = 1
+        clear_program_counter_mid_interrupt = 1
     )
 
     # there should be no effect
@@ -1329,35 +1698,36 @@ async def interrupt_test3(dut):
         clear_timer_interrupt = 0,
         clear_loop_interrupt = 0,
         clear_program_end_interrupt = 1,
-        clear_program_counter_64_interrupt = 0
+        clear_program_counter_mid_interrupt = 0
     )
     assert not await device.tqv.is_interrupt_asserted()
 
 # Loop interrupt test
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def interrupt_test4(dut):
+async def interrupt_2bps_test4(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0), (1, 1), (1, 0)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_loop_interrupt_en = 1
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 2
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 3
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
     # No interrupt triggered because we did not loop
     assert not await device.tqv.is_interrupt_asserted()
 
     device.config_program_loop_count = 2
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
     # Interrupt triggered because we looped once
     assert await device.tqv.is_interrupt_asserted()
@@ -1366,28 +1736,29 @@ async def interrupt_test4(dut):
         clear_timer_interrupt = 0,
         clear_loop_interrupt = 1,
         clear_program_end_interrupt = 0,
-        clear_program_counter_64_interrupt = 0
+        clear_program_counter_mid_interrupt = 0
     )
 
     assert not await device.tqv.is_interrupt_asserted()
 
 # Timer interrupt test
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def interrupt_test5(dut):
+async def interrupt_2bps_test5(dut):
     device = Device(dut)
     await device.init()
 
     program = [(0, 1), (0, 0), (1, 1), (1, 0)]
     
-    device.config_program_end_index = len(program) - 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = (len(program) - 1) * 2
     device.config_timer_interrupt_en = 1
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 2
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 3
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
     assert await device.tqv.is_interrupt_asserted()
 
@@ -1399,14 +1770,14 @@ async def interrupt_test5(dut):
         clear_timer_interrupt = 1,
         clear_loop_interrupt = 1,
         clear_program_end_interrupt = 1,
-        clear_program_counter_64_interrupt = 1
+        clear_program_counter_mid_interrupt = 1
     )
 
     assert not await device.tqv.is_interrupt_asserted()
  
-# Program counter 64 interrupt test
+# Program counter mid interrupt test
 @cocotb.test(timeout_time=2, timeout_unit="ms")
-async def interrupt_test6(dut):
+async def interrupt_2bps_test6(dut):
     device = Device(dut)
     await device.init()
 
@@ -1420,23 +1791,24 @@ async def interrupt_test6(dut):
         transmit_level = random.randint(0, 1)     # 1-bit transmit level: 0 or 1
         program.append((duration_selector, transmit_level))
     
-    device.config_program_end_index = 63
-    device.config_program_counter_64_interrupt_en = 1
+    device.config_use_2bps = 1
+    device.config_program_end_index = 63 * 2
+    device.config_program_counter_mid_interrupt_en = 1
     device.config_main_low_duration_a = 1
     device.config_main_low_duration_b = 2
     device.config_main_high_duration_a = 0
     device.config_main_high_duration_b = 3
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
     # No interrupt triggered because program counter did not reach 64
     assert not await device.tqv.is_interrupt_asserted()
 
-    device.config_program_end_index = 64
+    device.config_program_end_index = 64 * 2
 
-    await device.write_program(program)
-    await device.test_expected_waveform(program)
+    await device.write_program_2bps(program)
+    await device.test_expected_waveform_2bps(program)
 
     # Interrupt triggered because program counter reached 64
     assert await device.tqv.is_interrupt_asserted()
@@ -1445,7 +1817,7 @@ async def interrupt_test6(dut):
         clear_timer_interrupt = 0,
         clear_loop_interrupt = 0,
         clear_program_end_interrupt = 0,
-        clear_program_counter_64_interrupt = 1
+        clear_program_counter_mid_interrupt = 1
     )
 
     assert not await device.tqv.is_interrupt_asserted()
