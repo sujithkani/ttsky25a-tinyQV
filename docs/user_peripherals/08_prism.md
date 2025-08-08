@@ -26,17 +26,46 @@ index register to track the current FSM state.  That index is a pointer into the
 
 ## Operating priciples of PRISM
 
-PRISM supports FSM designs up to 8 states and includes controllable peripherals such as counters, communication shift register, FIFO and interrupt support.  It also features an integrated debugger with 2 breakpoints, single-stepping and readback of state information.  Due to long combinatorial delays, PRISM operates from a divide-by-two clock (32Mhz max).  The following is a block diagram of the PRISM controller:
+PRISM supports FSM designs up to 8 states and includes controllable peripherals such as counters,
+communication shift register, FIFO and interrupt support.  It also features an integrated debugger
+with 2 breakpoints, single-stepping and readback of state information.  Due to long combinatorial
+delays, PRISM operates from a divide-by-two clock (32Mhz max).  The following is a block diagram
+of the PRISM controller:
 
-Each state is encoded with a 44-bit (in the case of TinyQV PRISM) execution word that controls the FSM output values, input values and state transition decision tree for that state.  The peripheral is operated by loading a "Chroma" (more on that below), or execution personality in the 352 bit configuration array and programming the 14-bit control word to set peripheral behaviors (like choosing 24-bit shift register vs. 24-bit counter, choosing pin locations for shift data in/out, etc.).
+Each state is encoded with a 44-bit (in the case of TinyQV PRISM) execution word that controls the
+FSM output values, input values and state transition decision tree for that state.  The peripheral
+is operated by loading a "Chroma" (more on that below), or execution personality in the 352 bit
+configuration array and programming the 14-bit control word to set peripheral behaviors
+(like choosing 24-bit shift register vs. 24-bit counter, choosing pin locations for shift data
+in/out, etc.).
 
-Once a chroma has been loaded, the control register programmed and the PRISM enabled, the FSM will start at state 0.  Eight of the bits in the State Execution Word (STEW) specify which of 16 inputs get routed to the 2-input Look Up Table (LUT) that makes the decision for jumping to the specified state (stored in 3 bits of the STEW).  While in any state, there is a set of 11 (from the STEW) output bits that drive the PRISM block outputs when the LUT output is zero (no jump) and 11 more that are output during a jump (transitional outputs).
+Once a chroma has been loaded, the control register programmed and the PRISM enabled, the FSM
+will start at state 0.  Eight of the bits in the State Execution Word (STEW) specify which of
+16 inputs get routed to the 2-input Look Up Table (LUT) that makes the decision for jumping to
+the specified state (stored in 3 bits of the STEW).  While in any state, there is a set of 11
+(from the STEW) output bits that drive the PRISM block outputs when the LUT output is zero
+(no jump) and 11 more that are output during a jump (transitional outputs).
 
-Each state also has an independent 16-input mux (4-bits from STEW) driving a 1-input LUT to drive a "conditional output".  This is an output who's value is not strictly depedent on the static values in the STEW for the current state, but rather depends on the selected input during that state.
+Each state also has an independent 16-input mux (4-bits from STEW) driving a 1-input LUT to
+drive a "conditional output".  This is an output who's value is not strictly depedent on the
+static values in the STEW for the current state, but rather depends on the selected input during
+that state.
 
-In larger PRISM implementations, each state has "dual-compare" with two N-bit LUTs which allows jumping to one of two possible states.  Due to size restrictions, this peripheral does not include dual-compare.  Instead the PRISM implementation has (in each state's STEW), a single "increment state" bit.  In any state where this bit is set and the LUT output is FALSE (i.e no jump), then the state will increment to the next state, and the "starting state" of the first occurance of this will be saved.  Then each successive state can test a different set of inputs to jump to different states.  When a state is encountered without the 'inc' bit set, PRISM will loop back to the "starting state" and loop through that set of states until the first TRUE from a LUT, clearing the loop.
+### State Looping (important)
 
-TL/DR:
+In larger PRISM implementations, each state has "dual-compare" with two N-bit LUTs which allows
+jumping to one of two possible states.  Due to size restrictions, this peripheral does not include
+dual-compare.  Instead the PRISM implementation has (in each state's STEW), a single
+"increment state" bit.
+
+In any state where the 'inc' bit is set and the LUT output is FALSE (i.e no jump),
+then the state will increment to the next state, and the "starting state" of the first occurance
+of this will be saved (i.e. start of loop).  Then each successive state can test a different set of
+inputs to jump to different states.  When a state is encountered with the 'inc' bit NOT set, PRISM
+will loop back to the "starting state" and loop through that set of states until the first TRUE
+from a LUT causing a jump, clearing the loop.
+
+### TL/DR
   1. Load a Chroma defining the FSM and enable PRISM.
   2. State starts at zero.
   3. Each state chooses up to 3 of 16 inputs via config bits.
@@ -46,56 +75,146 @@ TL/DR:
   7. Outputs bits from STEW for "non-jump" and "transitional jump".
   8. One conditional output based on single selected input per state.
 
+## External PRISM Inputs
+
+Inputs to the PRISM engine come from the ui_in[6:0] pins of the TinyTapeout ASIC
+(pin 7 is not used as this is a UART pin for TinyQV).  All 7 ui_in[6:0] pins are
+directly selectable by the running chroma for state transition or conditional output decisions.
+
+![](08_inputs.png)
+
+In addition to direct input to the PRISM, a few inputs also have special functions
+(refer to the diagram below for visual).  Input ui_in[0] can be programmatically latched
+by the chroma using PRISM out[5] when configured via the ctrl_reg latch5 and latch_in_out bits.
+The latched input version becomes available on PRISM input in[12].  This allows for detection
+of rising or falling edges.
+
+Additionally any one of inputs in[3:0] can be used as shift register "shift_in_data" to
+feed the 8-bit and 24-bit shift registers.  Selection of which pin of in[3:0] is made
+using ctrl_reg field "shift_in_sel".
+
+The diagram also shows that shift_out_data can be latched via the out[5] signal.
+It is to allow protocols like SPI to present serial output data on one edge while
+shifting occurs on the opposite edge (by selecting in[13] as the controlling input
+for the cond_out[0] conditional output.
+
+The in[13:12] inputs to PRISM can also be driven by the registered version of out[6] and out[1] bits.
+This allows a chroma to use a single FSM state to perform multiple output operations using the
+in-state vs. transitional outputs.  For instance, the shift_en signal is output on out[6].
+The following code will perform a rising plus falling shift edge in a single FSM state since
+a registered version of the shift_en is used to detect when to transition to the next state.
+
+    STATE_SHIFT_BITS:
+       begin
+          // Shift the next bit out
+          shift_en = 1'b1;
+
+          // Detect the rising shift_en bit to go to next state
+          if (shift_en_in)
+          begin
+             next_state = STATE_DELAY;
+             shift_en = 1'b0;
+          end
+       end
+
+
+## External PRISM Outputs
+
+The PRISM has 11 outputs, 7 of which (out[6:0]) can directly drive uo_out[7:1] pins. 
+Note that uo_out[0] is not used since it is the TinyQV UART TX pin.  However some of the out[6:0]
+outputs from PRISM also have special functions, and the uo_out[7:1] pins also have muxes allowing
+other types of output (such as shift_out data, conditional out, etc.).  Below is a diagram of the
+external outputs for the PRISM peripheral.
+
+![](08_outputs.png)
+
+Outputs uo_out[1], out[5] and out[7] are controled directly by PRISM outputs 0,4 and 6 respectively.
+Though PRISM out[6] also serves as the "shift_enable" signal when performing either an 8-bit or 24-bit
+shift operation (via enable bits in the ctrl_reg).
+
+Outputs uo_out[4:2] can be driven either directly from PRISM out[3:1], or can have muxed data:
+
+ - shift_out_sel (2-bits) when non-zero selects 8 or 24 bit shift out data.
+ - cond_out_sel (2-bits) when non-zero selects cond_out[0] conditional output.
+
+Output uo_out[6] can be driven either directly from PRISM out[5] or can be the "fifo_full" signal
+when fifo_24 and latch5 config bits are set in ctrl_reg (more on those bits in the 3-Byte FIFO section).
+
 ## Peripherals
 
 The PRISM Peripheral has, itself, peripherals.  Those are:
-  1. 8-Bit communication shift register (left or right).
+  1. 8-Bit communication shift register (left or right)
   2. 8-Bit count up/down register with compare (dedicated compare reg or comm register).
-  3. 24-bit register: Count down with zero detect, shift left / right or 3-byte FIFO.
-  4. 5-bit Shift bit counter (automatic).
-  5. Input shift data source selection.
-  6. Output shift data destination selection.
-  7. Conditional output destination selection.
-  8. Controllable latched inputs (2-bits).
+  3. 24-bit register: Count down with zero detect, shift left / right or 3-byte FIFO
+  4. 5-bit Shift bit counter (automatic)
+  5. Input shift data source selection
+  6. Output shift data destination selection
+  7. Conditional output destination selection
+  8. Controllable latched inputs (2-bits)
+
+## 8-Bit Counter (count2)
+
+The 8-bit counter is an up/down/clear counter controllable from the PRISM chroma.  There are three
+PRISM outputs plus a ctrl_reg bit that contols the operation (see figure below).  Upon reset (or disabling
+PRISM) the count will be zero.  In any PRISM state, the counter can be cleared, incremented or decremented
+(assuming decrement has been enabled via the count2_dec ctrl_reg bit).  The decrement is provided as 
+a configurable feature in case it is not needed but uo_out[6] is needed (since they share the same out[5] signal).
+
+![](08_8bit_counter.png)
+
+The current 8-bit count2 value is compared against both the 8-bit count2_compare register (fixed register accessible
+by TinyQV with R/W access) *and* the comm_data register (also R/W accessible).  The result of each of these
+compares are made available on PRISM inputs in[11] and in[15].  A running chroma can use these compare inputs
+for timing, terminal count checking, etc.
+
+## 8-Bit Communication Register
+
+![](08_8bit_comm_register.png)
 
 ## Chroma
 
-Chroma are PRISM's version of "personalities".  Each chroma is a unique hue of PRISM's spectrum of behavior. Chroma's are coded as Mealy state machines in Verilog to define FSM inputs, outputs and state transitions:
+Chroma are PRISM's version of "personalities".  Each chroma is a unique hue of PRISM's
+spectrum of behavior. Chroma's are coded as Mealy state machines in Verilog to define FSM
+inputs, outputs and state transitions:
 
-   always @(posedge clk or negedge rst_n)
-      if (~rst_n)
-         curr_state <= 3'h0;
-      else
-         curr_state <= fsm_enable ? next_state : 'h0;
+    always @(posedge clk or negedge rst_n)
+       if (~rst_n)
+          curr_state <= 3'h0;
+       else
+          curr_state <= fsm_enable ? next_state : 'h0;
+ 
+    always_comb
+    begin
+       pin_out[5:0]   = 6'h0;
+       count1_dec     = 1'b0;
+       etc.
+ 
+       case (curr_state)
+       STATE_IDLE:       // State 0
+          begin
+             // Detect I/O shift start 
+             if (host_in[HOST_START])
+             begin
+                // Load inputs 
+                pin_out[GPIO_LOAD] = 1'b0;
+ 
+                // Load 24-bit shift register from preload (our OUTPUTS)
+                count1_load = 1'b1;
+                next_state = STATE_LATCH_INPUTS;
+             end
+          end
+       STATE_LATCH_INPUTS:  // State 1
+          begin
+             next_state = STATE_SHIFT_BITS;
+          end
+       etc.
+    end
 
-   always_comb
-   begin
-      pin_out[5:0]   = 6'h0;
-      count1_dec     = 1'b0;
-      etc.
-
-      case (curr_state)
-      STATE_IDLE:       // State 0
-         begin
-            // Detect I/O shift start 
-            if (host_in[HOST_START])
-            begin
-               // Load inputs 
-               pin_out[GPIO_LOAD] = 1'b0;
-
-               // Load 24-bit shift register from preload (our OUTPUTS)
-               count1_load = 1'b1;
-               next_state = STATE_LATCH_INPUTS;
-            end
-         end
-      STATE_LATCH_INPUTS:  // State 1
-         begin
-            next_state = STATE_SHIFT_BITS;
-         end
-      etc.
-   end
-
-Chroma are compiled into PRISM programmable bitstreams via a custom fork of Yosys (see link below) using a configuration file describing the architecture in the TinyQV PRISM peripheral.  In addition to bitstream generation, the Yosys PRISM backend also calculates the ctrl_reg value for selecting configuring the PRISM peripheral muxes, etc.  There are several output formats including C, Python and columnar list:
+Chroma are compiled into PRISM programmable bitstreams via a custom fork of Yosys (see link below)
+using a configuration file describing the architecture in the TinyQV PRISM peripheral.  In addition
+to bitstream generation, the Yosys PRISM backend also calculates the ctrl_reg value for 
+configuring the PRISM peripheral muxes, etc.  There are several output formats including C,
+Python and columnar list:
 
 | ST | Mux0 | Mux1 | Mux2 | Inc | JmpA | OutA | Out | CfgA | CfgB |        STEW |
 |----|------|------|------|-----|------|------|-----|------|------|-------------|
@@ -107,6 +226,19 @@ Chroma are compiled into PRISM programmable bitstreams via a custom fork of Yosy
 |  5 |    8 |    0 |    0 |   0 |    0 |  001 | 001 |    5 |    0 | 14008010010 |
 |  6 |    0 |    0 |    0 |   0 |    0 |  001 | 000 |    f |    0 | 3c008000000 |
 |  7 |    0 |    0 |    0 |   0 |    0 |  001 | 000 |    f |    0 | 3c008000000 |
+
+The table has the following fields
+ - ST: the state (obvious)
+ - Mux0: Selects input for LUT2 input 0 (jump decision)
+ - Mux1: Selects input for LUT2 input 1
+ - Mux2: Selects input for LUT1 Conditional Output
+ - Inc: Set when next state looping is requested (i.e. 'else state <= ST_A')
+ - JmpA: The "Jump to" state if LUT2 output is TRUE
+ - OutA: Outputs during "jump to" JmpA state (LSB is PRISM out[0])
+ - Out: Output during no-jump, steady-state dwelling
+ - CfgA: The LUT2 4-bit lookup table values
+ - CfgB: The LUT1 2-bit lookup table values
+ - STEW: The complete word aggregrated in proper bit order
 
 ## Register map
 
@@ -240,23 +372,23 @@ Byte-mode access of the RX FIFO status.
 
 ## How to test
 
- -  First define a Chroma (1) wth FSM transitions, inputs and outputs.
- -  Write Verilog to describe your FSM in Mealy format.
- -  Specify the Control Word Mux and options bit settings in the Verilog:
-    shift_en:    Enable shifter mode in either comm_data or 24-bit count1.
-    shift_24_en: Specify if shift is comm_data or count1.
-    shift_dir:   Set left or right shift direction.
-    fifo_24:     Use 24-bit count1 as RX FIFO.
+1.  First define a Chroma FSM transitions, inputs and outputs.
+2.  Write Verilog to describe your FSM in Mealy format.
+3.  Specify the Control Word Mux and options bit settings in the Verilog:
+    shift_en:    Enable shifter mode in either comm_data or 24-bit count1
+    shift_24_en: Specify if shift is comm_data or count1
+    shift_dir:   Set left or right shift direction
+    fifo_24:     Use 24-bit count1 as RX FIFO
     etc.
- -  Clone and build the custom Yosys fork for generating PRISM bitstreams.  (2)
- -  Generate your chroma bitstream using the PRISM Yosys version. (3)
- -  Copy the generated chroma and ctrl_reg value from either the .py or .c file.
- -  Pass the chroma and ctrl_reg value to the "load_chroma" function.
- -  The chroma should start running immediately.
+4.  Clone and build the custom Yosys fork for generating PRISM bitstreams.  (2)
+5.  Generate your chroma bitstream using the PRISM Yosys version. (3)
+6.  Copy the generated chroma and ctrl_reg value from either the .py or .c file.
+7.  Pass the chroma and ctrl_reg value to the "load_chroma" function.
+8.  The chroma should start running immediately.
 
- 1. See examples in chromas directory.
- 2. The Makefile in the chromas directory has a 'make yosys' target for cloning and building this from github sources.
- 3. If you put your chroma in the 'chromas' directory and follow the naming convention, simply typing 'make' within that directory will build your chroma.  Results appear in the 'output' directory.
+  (1) See examples in chromas directory.
+  (2) The Makefile in the chromas directory has a 'make yosys' target for cloning and building this from github sources.
+  (3) If you put your chroma in the 'chromas' directory and follow the naming convention, simply typing 'make' within that directory will build your chroma.  Results appear in the 'output' directory.
 
  - https://github.com/kdp1965/tinyqv-prism-lite/tree/main/chromas
  - https://github.com/kdp1965/yosys-prism

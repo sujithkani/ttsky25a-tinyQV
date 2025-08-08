@@ -13,7 +13,11 @@ async def reset(dut, latency=1, ui_in=0x80):
     dut._log.info(f"Reset, latency {latency}")
     dut.ena.value = 1
     dut.ui_in_base.value = ui_in
-    dut.uio_in.value = 0
+    dut.uio_in[0].value = 0
+    dut.uio_in[3].value = 0
+    dut.uio_in[6].value = 0
+    dut.uio_in[7].value = 0
+    dut.qspi_data_in.value = 0
     dut.rst_n.value = 1
     dut.uart_rx.value = 1
     await ClockCycles(dut.clk, 2)
@@ -214,20 +218,25 @@ async def nops_loop(dut):
     while send_nops:
         await send_instr(dut, InstructionADDI(x0, x0, 0).encode())
 
-def start_nops(dut):
+async def start_nops(dut):
     global send_nops, nop_task
     send_nops = True
     nop_task = cocotb.start_soon(nops_loop(dut))
 
+    # This ensures that the nop task is actually started, so that it can be instantly stopped.
+    await Timer(2, "ps")
+
 async def stop_nops():
     global send_nops, nop_task
     send_nops = False
-    await nop_task
+    if nop_task is not None:
+        await nop_task
+    nop_task = None
 
 async def read_byte(dut, reg, expected_val):
   await send_instr(dut, InstructionSW(tp, reg, 0x18).encode())
 
-  start_nops(dut)
+  await start_nops(dut)
   for i in range(80):
       if dut.debug_uart_tx.value == 0:
           break
