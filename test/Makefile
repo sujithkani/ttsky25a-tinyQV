@@ -23,8 +23,8 @@ USER_PERIPHERALS = \
 	@make -f test_$*.mk clean
 	make -f test_$*.mk
 	@mv results.xml $@
-	@mv sim_build/rtl/tb.fst $*-rtl.fst || true
-	@mv sim_build/gl/tb.fst $*-gl.fst || true
+	@mv sim_build/rtl/tb*.fst $*-rtl.fst || true
+	@mv sim_build/gl/tb*.fst $*-gl.fst || true
 
 peri-%.xml:
 	@make -f test_basic.mk clean
