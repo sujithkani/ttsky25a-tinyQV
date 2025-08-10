@@ -452,7 +452,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .data_out(data_from_simple_peri[1])
     );
 
-    tqvp_byte_empty i_cattuto_ws2812b_driver02 (
+    tqvp_cattuto_ws2812b_driver #(.CLOCK_MHZ(CLOCK_MHZ)) i_cattuto_ws2812b_driver02 (
         .clk(clk),
         .rst_n(rst_n),
 
