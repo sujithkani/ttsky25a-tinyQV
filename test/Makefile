@@ -17,25 +17,34 @@ USER_PERIPHERALS = \
 	tqvp_laurie_dwarf_line_table_accelerator.test \
 	pulse_transmitter.test \
 
-.PHONY: all $(USER_PERIPHERALS)
+.PHONY: all core prog peri $(USER_PERIPHERALS)
 
 %-results.xml:
-	make -f test_$*.mk clean
+	@make -f test_$*.mk clean
 	make -f test_$*.mk
-	mv results.xml $@
-	mv sim_build/rtl/tb.fst $*-rtl.fst || true
-	mv sim_build/gl/tb.fst $*-gl.fst || true
+	@mv results.xml $@
+	@mv sim_build/rtl/tb*.fst $*-rtl.fst || true
+	@mv sim_build/gl/tb*.fst $*-gl.fst || true
 
 peri-%.xml:
-	make -f test_basic.mk clean
+	@make -f test_basic.mk clean
 	MODULE=user_peripherals.$* make -f test_basic.mk || true
-	if [ ! -f results.xml ]; then echo '<failure message="$* failed (crashed)" />' > results.xml; fi
-	mv results.xml $@
-	mv sim_build/rtl/tb.fst $*-rtl.fst || true
-	mv sim_build/gl/tb.fst $*-gl.fst || true
+	@if [ ! -f results.xml ]; then echo '<failure message="$* failed (crashed)" />' > results.xml; fi
+	@mv results.xml $@
+	@mv sim_build/rtl/tb.fst $*-rtl.fst || true
+	@mv sim_build/gl/tb.fst $*-gl.fst || true
 
 all: clean basic-results.xml prog-results.xml $(USER_PERIPHERALS:%=peri-%.xml)
-	cat *results.xml peri-*.xml > results.xml
+	@cat *results.xml peri-*.xml > results.xml
+
+core: clean basic-results.xml
+	@cat *results.xml > results.xml
+
+prog: clean prog-results.xml
+	@cat *results.xml > results.xml
+
+peri: clean $(USER_PERIPHERALS:%=peri-%.xml)
+	@cat peri-*.xml > results.xml
 
 $(USER_PERIPHERALS): %: peri-%.xml
 

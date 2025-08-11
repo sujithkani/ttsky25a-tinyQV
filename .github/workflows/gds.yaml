@@ -27,7 +27,7 @@ jobs:
           pdk: sky130
           tools-ref: ttsky25a
 
-  gl_test:
+  gl_test_core:
     needs: gds
     runs-on: ubuntu-24.04
     steps:
@@ -40,6 +40,22 @@ jobs:
         uses: MichaelBell/tt-gds-action/gl_test@ttsky25a
         with:
           pdk: sky130
+          make-targets: core prog
+
+  gl_test_peri:
+    needs: gds
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repo
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: GL test
+        uses: MichaelBell/tt-gds-action/gl_test@ttsky25a
+        with:
+          pdk: sky130
+          make-targets: peri
 
   viewer:
     if: github.event_name != 'pull_request'

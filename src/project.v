@@ -214,21 +214,34 @@ module tt_um_tt_tinyQV #(parameter CLOCK_MHZ=64) (
     );
 
     reg [5:0] time_count;
-    always @(posedge clk) begin
-        if (!rst_reg_n) begin
-            time_count <= 0;
+
+    generate
+        if (CLOCK_MHZ == 64) begin
+            always @(posedge clk) begin
+                if (!rst_reg_n) begin
+                    time_count <= 0;
+                end else begin
+                    time_count <= time_count + 1;
+                end
+            end
         end else begin
-            if (time_count == (CLOCK_MHZ - 1)) time_count <= 0;
-            else time_count <= time_count + 1;
+            always @(posedge clk) begin
+                if (!rst_reg_n) begin
+                    time_count <= 0;
+                end else begin
+                    if (time_count == (CLOCK_MHZ - 1)) time_count <= 0;
+                    else time_count <= time_count + 1;
+                end
+            end
         end
-    end
+    endgenerate
     assign time_pulse = time_count == (CLOCK_MHZ - 1);
 
     // Debug
     always @(posedge clk) begin
         if (!rst_reg_n)
             debug_register_data <= ui_in[1];
-        else if (connect_peripheral == PERI_DEBUG)
+        else if (write_n != 2'b11 && connect_peripheral == PERI_DEBUG)
             debug_register_data <= data_to_write[0];
     end
 
