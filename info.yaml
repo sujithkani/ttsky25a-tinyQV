@@ -68,6 +68,7 @@ project:
     - "user_peripherals/pulse_transmitter/delay_2.v"
     - "user_peripherals/pulse_transmitter/simple_falling_edge_detector.v"
     - "user_peripherals/pulse_transmitter/simple_rising_edge_detector.v"
+    - "user_peripherals/hardware_utf8/hardware_utf8.v"
     - "tinyQV/cpu/tinyqv.v"
     - "tinyQV/cpu/alu.v"
     - "tinyQV/cpu/core.v"
