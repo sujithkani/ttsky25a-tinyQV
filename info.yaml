@@ -57,6 +57,8 @@ project:
     - "user_peripherals/prism/prism_sr_sit.v"
     - "user_peripherals/prism/prism_latch_sit.v"
     - "user_peripherals/prism/prism_latch_reg.v"
+    - "user_peripherals/prng/prng.v"
+    - "user_peripherals/prgn/xoshiro128plusplus.v"
     - "user_peripherals/pwl_synth/pwl_synth.sv"
     - "user_peripherals/pwl_synth/pwl_synth_memory.sv"
     - "user_peripherals/wdt/tqvp_nkanderson_wdt.sv"
