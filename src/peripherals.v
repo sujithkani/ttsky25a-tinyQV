@@ -342,7 +342,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .user_interrupt(user_interrupts[11])
     );
 
-    tqvp_full_example i_user_peri12 (
+    tqvp_cattuto_xoshiro128plusplus_prng i_cattuto_xoshiro128plusplus_prng (
         .clk(clk),
         .rst_n(rst_n),
 
