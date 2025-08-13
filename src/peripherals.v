@@ -399,7 +399,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .user_interrupt(user_interrupts[14])
     );
 
-    tqvp_full_example i_user_peri15 (
+    tqvp_jnms_pdm i_pdm15 (
         .clk(clk),
         .rst_n(rst_n),
 
