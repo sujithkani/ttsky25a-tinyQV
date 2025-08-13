@@ -380,7 +380,7 @@ module tinyQV_peripherals (
         .user_interrupt(user_interrupts[13])
     );
 
-    tqvp_full_example i_user_peri14 (
+    tqvp_fjpolo_rv2a03 i_user_peri14 (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -399,7 +399,7 @@ module tinyQV_peripherals (
         .user_interrupt(user_interrupts[14])
     );
 
-    tqvp_fjpolo_rv2a03 i_user_peri15 (
+    tqvp_full_example i_user_peri15 (
         .clk(clk),
         .rst_n(rst_n),
 
