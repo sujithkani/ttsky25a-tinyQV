@@ -2,7 +2,7 @@
 
 Author: Jon Nordby, Martin Stensgård
 
-Peripheral index: 15
+Peripheral index: 10
 
 ## What it does
 
