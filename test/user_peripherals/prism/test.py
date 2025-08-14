@@ -218,6 +218,7 @@ async def test_project(dut):
         
         # Set an input value in the testbench
         input_value = 0x00BEEF
+        dut.ui_in[0].value = 0
 
         chroma = 'gpio24'
 
