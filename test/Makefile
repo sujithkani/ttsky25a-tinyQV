@@ -17,7 +17,7 @@ USER_PERIPHERALS = \
 	tqvp_laurie_dwarf_line_table_accelerator.test \
 	pulse_transmitter.test \
 	prng.test \
-
+	hardware_utf8.test \
 
 .PHONY: all core prog peri $(USER_PERIPHERALS)
 
