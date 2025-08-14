@@ -107,7 +107,7 @@ async def common_setup(dut):
     dut._log.info("Start")
     clock = Clock(dut.clk, 100, units="ns")
     cocotb.start_soon(clock.start())
-    tqv = TinyQV(dut)
+    tqv = TinyQV(dut, peripheral_num=14)
     await tqv.reset()
     await ClockCycles(dut.clk, 10)
     
@@ -125,7 +125,7 @@ async def common_setup(dut):
 async def test_sq1_channel(dut):
     """Test Square Channel 1."""
     dut._log.info("--- Test: Square Channel 1 ---")
-    tqv = await common_setup(dut)
+    tqv = await common_setup(dut, peripheral_num=14)
     
     # Enable only Square 1 channel (bit 0)
     await tqv.write_byte_reg(APU_STATUS_REG_ADDRESS, 0x01)
@@ -142,7 +142,7 @@ async def test_sq1_channel(dut):
 async def test_sq2_channel(dut):
     """Test Square Channel 2."""
     dut._log.info("--- Test: Square Channel 2 ---")
-    tqv = await common_setup(dut)
+    tqv = await common_setup(dut, peripheral_num=14)
     
     # Enable only Square 2 channel (bit 1)
     await tqv.write_byte_reg(APU_STATUS_REG_ADDRESS, 0x02)
@@ -159,7 +159,7 @@ async def test_sq2_channel(dut):
 async def test_tri_channel(dut):
     """Test Triangle Channel."""
     dut._log.info("--- Test: Triangle Channel ---")
-    tqv = await common_setup(dut)
+    tqv = await common_setup(dut, peripheral_num=14)
     
     # Enable only Triangle channel (bit 2)
     await tqv.write_byte_reg(APU_STATUS_REG_ADDRESS, 0x04)
@@ -193,7 +193,7 @@ async def test_noise_channel(dut):
 async def test_all_channels_together(dut):
     """Test all channels simultaneously."""
     dut._log.info("--- Test: All Channels Together ---")
-    tqv = await common_setup(dut)
+    tqv = await common_setup(dut, peripheral_num=14)
     
     # Enable channels: Sq1, Sq2, Tri, Noise
     await tqv.write_byte_reg(APU_STATUS_REG_ADDRESS, 0x0F)
