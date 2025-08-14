@@ -2,13 +2,15 @@
 import cocotb
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles, RisingEdge, FallingEdge, Edge
-from chroma_ws2812 import *
-from chroma_spislave import *
-from chroma_encoder import *
-from chroma_gpio24 import *
-from encoder import *
+from user_peripherals.prism.chroma_ws2812 import *
+from user_peripherals.prism.chroma_spislave import *
+from user_peripherals.prism.chroma_encoder import *
+from user_peripherals.prism.chroma_gpio24 import *
+from user_peripherals.prism.encoder import *
 
 from tqv import TinyQV
+
+PERIPHERAL_NUM = 8
 
 @cocotb.test()
 async def test_project(dut):
@@ -45,7 +47,7 @@ async def test_project(dut):
             curr_val = int(val_str, 2)
 
             # Check for clear or clock
-            if curr_val & 2 == 0:
+            if (curr_val & 2) == 0:
                 # Load new value
                 input_shift = input_value
             elif ((prev_val ^ curr_val) & (1 << 7)) and (curr_val & (1 << 7)):
@@ -80,7 +82,6 @@ async def test_project(dut):
                 bit = int(dut.uo_out[5].value)
                 output_shift = ((output_shift << 1) | bit) & 0xFFFFFF
             prev_val = curr_val
-
 
     async def delay(clocks):
         for i in range(clocks):
@@ -281,7 +282,7 @@ async def test_project(dut):
         chroma = 'spislave'
 
         # Write a known byte to count1_preload register
-        await tqv.write_byte_reg(0x20, 0xF367)
+        await tqv.write_word_reg(0x20, 0xF367)
         
         # Start a transfer
         spi_transfer = True 
@@ -389,7 +390,7 @@ async def test_project(dut):
 
         dut._log.info("    Testing count2 value")
         count = await tqv.read_word_reg(0x24) >> 24
-        assert count == 8
+        assert count == 9
 
         
     # Start the simulations
@@ -406,7 +407,7 @@ async def test_project(dut):
     # with TinyQV - the implementation of this class will be replaces with a
     # different version that uses Risc-V instructions instead of the SPI 
     # interface to read and write the registers.
-    tqv = TinyQV(dut)
+    tqv = TinyQV(dut, PERIPHERAL_NUM)
 
     # Reset
     await tqv.reset()
