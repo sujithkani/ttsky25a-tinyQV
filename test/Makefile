@@ -16,6 +16,7 @@ USER_PERIPHERALS = \
 	wdt.test \
 	tqvp_laurie_dwarf_line_table_accelerator.test \
 	pulse_transmitter.test \
+	crc32 \
 
 .PHONY: all core prog peri $(USER_PERIPHERALS)
 

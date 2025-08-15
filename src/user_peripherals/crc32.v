@@ -10,7 +10,7 @@ module tqvp_crc32(
     input wire          rst_n,
 
     input  wire [7:0]   ui_in,        // unused
-    output reg [7:0]    uo_out,       // The output PMOD.  Each wire is only connected if this peripheral is selected
+    output reg [7:0]    uo_out,       // unused
 
     input [3:0]         address,      // Address within this peripheral's address space
 
@@ -21,15 +21,16 @@ module tqvp_crc32(
 );
 
     localparam CRC_WIDTH = 32;  
-    localparam SEED = 32'h04C11DB7; 
+    localparam POLY = 32'hEDB88320; // Standard CRC-32 polynomial, reflected version
+    //localparam POLY = 32'h04C11DB7; 
 
     // Address map
     localparam ADDR_CLEAR           = 4'h0;    // reset computation
     localparam ADDR_COMPUTE         = 4'h1;    // compute CRC on data_in
-    localparam ADDR_CRC_BYTE0       = 4'h3;    
-    localparam ADDR_CRC_BYTE1       = 4'h4;    
-    localparam ADDR_CRC_BYTE2       = 4'h5;    
-    localparam ADDR_CRC_BYTE3       = 4'h6;    // Read CRC result bytes
+    localparam ADDR_CRC_BYTE0       = 4'h2;    
+    localparam ADDR_CRC_BYTE1       = 4'h3;    
+    localparam ADDR_CRC_BYTE2       = 4'h4;    
+    localparam ADDR_CRC_BYTE3       = 4'h5;    // Read CRC result bytes
 
     // Internal registers
     reg [CRC_WIDTH-1:0] crc_buf;
@@ -39,13 +40,12 @@ module tqvp_crc32(
         integer i;
         reg [31:0] crc;
         begin
-            crc = current_crc;
-            crc = crc ^ (data_byte_in << 24);
+            crc = current_crc ^ {24'h0, data_byte_in};
             for (i = 0; i < 8; i = i + 1) begin
-                if (crc[31]) begin
-                    crc = (crc << 1) ^ SEED;
+                if (crc[0]) begin
+                    crc = (crc >> 1) ^ POLY;
                 end else begin
-                    crc = crc << 1;
+                    crc = crc >> 1;
                 end
             end
             crc_step = crc;
@@ -56,24 +56,17 @@ module tqvp_crc32(
     always @(posedge clk) begin
         if(!rst_n) begin
             crc_buf <= 32'hFFFFFFFF;
-            busy <= 1'b0;
         end else begin
             if (data_write) begin
                 case (address)
                     ADDR_CLEAR: begin
                         crc_buf <= 32'hFFFFFFFF;
-                        busy <= 1'b0;
                     end
                     ADDR_COMPUTE: begin
-                        busy <= 1'b1;
-                        crc_buf <= crc_step(crc_result, data_in);
+                        crc_buf <= crc_step(crc_buf, data_in);
                     end
                     default: ;
                 endcase
-            end
-
-            if (busy) begin
-                busy <= 1'b0;  // clear busy flag after 1 clock cycle
             end
         end
     end
