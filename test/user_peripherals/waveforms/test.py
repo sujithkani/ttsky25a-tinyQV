@@ -10,7 +10,7 @@ from tqv import TinyQV
 # When submitting your design, change this to 16 + the peripheral number
 # in peripherals.v.  e.g. if your design is i_user_simple00, set this to 16.
 # The peripheral number is not used by the test harness.
-PERIPHERAL_NUM = 32
+PERIPHERAL_NUM = 25
 
 
 @cocotb.test()
@@ -19,6 +19,7 @@ async def test_project(dut):
 
     # Set the clock period to 100 ns (10 MHz)
     clock = Clock(dut.clk, 100, units="ns")
+
     cocotb.start_soon(clock.start())
 
     BIT_CS = 3
@@ -32,7 +33,7 @@ async def test_project(dut):
     ADDR_SEL = 8
     ADDR_STATUS = 8
 
-    MODEL = True
+    MODEL = False
 
     # Interact with your design's registers through this TinyQV class.
     # This will allow the same test to be run when your design is integrated
@@ -49,19 +50,25 @@ async def test_project(dut):
     if not MODEL:
         # DC, CS, prescaler (not asserted)
         await tqv.write_reg(ADDR_DC_PRESC, 0b1_0_1100)
-        assert dut.uo_out.value[BIT_CS] == 1
-        assert dut.uo_out.value[BIT_DC] == 0
+        await ClockCycles(dut.clk, 100)
+        assert dut.uo_out[BIT_CS].value == 1
+        assert dut.uo_out[BIT_DC].value == 0
 
         await tqv.write_reg(ADDR_DC_PRESC, 0b0_1_1100)
-        assert dut.uo_out.value[BIT_CS] == 0
-        assert dut.uo_out.value[BIT_DC] == 1
+        await ClockCycles(dut.clk, 100)
+        assert dut.uo_out[BIT_CS].value == 0
+        assert dut.uo_out[BIT_DC].value == 1
 
         await tqv.write_reg(ADDR_DC_PRESC, 0b1_1_1100)
+        await ClockCycles(dut.clk, 100)
 
         # SPI tunnel, set CS manually
         await tqv.write_reg(ADDR_DC_PRESC, 0b0_1_0010)
+        await ClockCycles(dut.clk, 100)
         await tqv.write_reg(ADDR_SPI, 0x51)
+        await ClockCycles(dut.clk, 100)
         await tqv.write_reg(ADDR_SPI, 0x15)
+        await ClockCycles(dut.clk, 100)
         await tqv.write_reg(ADDR_DC_PRESC, 0b0_1_0010)
         await ClockCycles(dut.clk, 100)
 
