@@ -556,7 +556,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .data_out(data_from_simple_peri[8])
     );
 
-    tqvp_byte_example i_user_simple09 (
+    tqvp_meiniKi_waveforms i_tqvp_meiniKi_waveforms (
         .clk(clk),
         .rst_n(rst_n),
 
