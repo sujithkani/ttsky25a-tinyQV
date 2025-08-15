@@ -18,6 +18,7 @@ USER_PERIPHERALS = \
 	pulse_transmitter.test \
 	prng.test \
 	hardware_utf8.test \
+	ubcd.test \
 
 .PHONY: all core prog peri $(USER_PERIPHERALS)
 
