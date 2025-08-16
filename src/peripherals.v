@@ -182,10 +182,23 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .user_interrupt(user_interrupts[PERI_UART+1:PERI_UART])
     );
 
-    // There is no peripheral 3, UART uses its interrupt.
-    assign uo_out_from_user_peri[3] = 8'h0;
-    assign data_from_user_peri[3] = 32'h0;
-    assign data_ready_from_user_peri[3] = 1;
+    // Peripheral 3 is a full peripheral but with no interrupt
+    tqvp_game_pmod i_user_peri03(
+        .clk(clk),
+        .rst_n(rst_n),
+
+        .ui_in(ui_in),
+        .uo_out(uo_out_from_user_peri[3]),
+
+        .address(addr_in[5:0]),
+        .data_in(data_in),
+
+        .data_write_n(data_write_n    | {2{~peri_user[3]}}),
+        .data_read_n(data_read_n_peri | {2{~peri_user[3]}}),
+
+        .data_out(data_from_user_peri[3]),
+        .data_ready(data_ready_from_user_peri[3])
+    );
 
     // --------------------------------------------------------------------- //
     // Full interface peripherals

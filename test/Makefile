@@ -4,6 +4,7 @@ USER_PERIPHERALS = \
 	pwm_sk \
 	full_example \
 	uart \
+	game_pmod \
 	matt_encoder.test \
 	ledstrip.test \
 	impostor_ws2812b.test \
