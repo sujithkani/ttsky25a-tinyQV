@@ -147,13 +147,14 @@ module tqvp_spi_peripheral (
     end
 
     wire start = !data_write && !spi_busy && tx_pending;
+    wire spi_select;
 
     tqvp_spi_ctrl i_spi_ctrl (
         .clk(clk),
         .rstn(rst_n),
 
         .spi_miso(ui_in[2]),
-        .spi_select(uo_out[4]),
+        .spi_select(spi_select),
         .spi_clk_out(uo_out[5]),
         .spi_mosi(uo_out[3]),
         .spi_dc(uo_out[2]),
@@ -170,8 +171,9 @@ module tqvp_spi_peripheral (
         .read_latency_in(data_in[7])
     );
 
-    assign uo_out[1:0] = 0;
-    assign uo_out[7:6] = 0;
+    assign uo_out[1:0] = spi_select;
+    assign uo_out[4] = spi_select;
+    assign uo_out[7:6] = spi_select;
 
     // Address 0 reads the control/status register.  
     // Address 1 reads back tx_data

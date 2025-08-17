@@ -25,6 +25,19 @@ The controller can automatically control CS, setting it low when a byte is about
 
 One byte of data to transmit is buffered to improve throughput when transmitting data.  Received data is not buffered.
 
+### Pinout
+
+The IOs used match the top row of the "SPI CTRL" PMOD on the demo board:
+
+    MISO: in2
+    MOSI: out3
+    CLK : out5
+    CSn : out4
+
+D/C is on out2.
+
+CSn is also connected to outputs 0, 1, 6 and 7.  This allows the SPI bus to be shared by multiple devices, by switching the desired CS to be controlled by the SPI controller, and all others to be set high by GPIO.
+
 ## Register map
 
 | Address | Name  | Access | Description                                                         |
