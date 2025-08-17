@@ -22,6 +22,7 @@ USER_PERIPHERALS = \
 	waveforms.test \
 	pdm.test \
 	ubcd.test \
+	analog_toolkit.test \
 
 .PHONY: all core prog peri $(USER_PERIPHERALS)
 
