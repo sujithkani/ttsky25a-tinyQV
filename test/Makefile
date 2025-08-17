@@ -20,6 +20,7 @@ USER_PERIPHERALS = \
 	prng.test \
 	hardware_utf8.test \
 	waveforms.test \
+	pdm.test \
 	ubcd.test \
 
 .PHONY: all core prog peri $(USER_PERIPHERALS)
