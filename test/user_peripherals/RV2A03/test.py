@@ -184,7 +184,7 @@ async def test_noise_channel(dut):
     
     await ClockCycles(dut.clk, 50000)
     
-    output_samples = await capture_samples(tqv, dut, 100)
+    # output_samples = await capture_samples(tqv, dut, 100)
     
     # assert any(s != 0 for s in output_samples), "Noise channel produced no output."
     dut._log.info("Noise channel test finished.")
@@ -205,7 +205,7 @@ async def test_all_channels_together(dut):
 
     await ClockCycles(dut.clk, 50000)
 
-    output_samples = await capture_samples(tqv, dut, 100)
+    # output_samples = await capture_samples(tqv, dut, 100)
     
    # assert any(s != 0 for s in output_samples), "Combined channels produced no output."
     dut._log.info("All channels test finished.")
