@@ -19,6 +19,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
     input         rst_n,
 
     input  [7:0]  ui_in,        // The input PMOD, always available
+    input  [7:0]  ui_in_raw,    // The input PMOD, not synchronized
     output [7:0]  uo_out,       // The output PMOD.  Each wire is only connected if this peripheral is selected
 
     input [10:0]  addr_in,
@@ -182,10 +183,23 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .user_interrupt(user_interrupts[PERI_UART+1:PERI_UART])
     );
 
-    // There is no peripheral 3, UART uses its interrupt.
-    assign uo_out_from_user_peri[3] = 8'h0;
-    assign data_from_user_peri[3] = 32'h0;
-    assign data_ready_from_user_peri[3] = 1;
+    // Peripheral 3 is a full peripheral but with no interrupt
+    tqvp_game_pmod i_user_peri03(
+        .clk(clk),
+        .rst_n(rst_n),
+
+        .ui_in(ui_in),
+        .uo_out(uo_out_from_user_peri[3]),
+
+        .address(addr_in[5:0]),
+        .data_in(data_in),
+
+        .data_write_n(data_write_n    | {2{~peri_user[3]}}),
+        .data_read_n(data_read_n_peri | {2{~peri_user[3]}}),
+
+        .data_out(data_from_user_peri[3]),
+        .data_ready(data_ready_from_user_peri[3])
+    );
 
     // --------------------------------------------------------------------- //
     // Full interface peripherals
@@ -304,7 +318,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .user_interrupt(user_interrupts[9])
     );
 
-    tqvp_full_example i_user_peri10 (
+    tqvp_jnms_pdm i_pdm10 (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -526,8 +540,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .data_out(data_from_simple_peri[6])
     );
 
-
-    tqvp_byte_example i_user_simple07 (
+    tqvp_rebeccargb_universal_decoder ubcd (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -557,7 +570,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .data_out(data_from_simple_peri[8])
     );
 
-    tqvp_byte_example i_user_simple09 (
+    tqvp_meiniKi_waveforms i_tqvp_meiniKi_waveforms (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -572,7 +585,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .data_out(data_from_simple_peri[9])
     );
 
-    tqvp_byte_example i_user_simple010 (
+    tqvp_htfab_anatool analog_toolkit (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -632,11 +645,11 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .data_out(data_from_simple_peri[13])
     );
 
-    tqvp_byte_example i_user_simple014 (
+    tqvp_spi_peripheral i_user_simple014 (
         .clk(clk),
         .rst_n(rst_n),
 
-        .ui_in(ui_in),
+        .ui_in(ui_in_raw),
         .uo_out(uo_out_from_simple_peri[14]),
 
         .address(addr_in[3:0]),
