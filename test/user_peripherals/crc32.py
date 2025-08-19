@@ -7,7 +7,7 @@ from cocotb.triggers import ClockCycles
 from tqv import TinyQV
 import zlib
 
-PERIPHERAL_NUM = 25
+PERIPHERAL_NUM = 27
 
 
 # Compute CRC32 from zlib as reference

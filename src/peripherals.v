@@ -556,7 +556,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .data_out(data_from_simple_peri[8])
     );
 
-    tqvp_crc32 crc32(
+    tqvp_byte_example i_user_simple09 (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -586,7 +586,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .data_out(data_from_simple_peri[10])
     );
 
-    tqvp_byte_example i_user_simple011 (
+    tqvp_crc32 crc32(
         .clk(clk),
         .rst_n(rst_n),
 
