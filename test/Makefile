@@ -19,6 +19,7 @@ USER_PERIPHERALS = \
 	RV2A03.test \
 	tqvp_laurie_dwarf_line_table_accelerator.test \
 	pulse_transmitter.test \
+	crc32 \
 	prng.test \
 	hardware_utf8.test \
 	waveforms.test \
