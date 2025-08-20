@@ -1,8 +1,6 @@
 USER_PERIPHERALS = \
-	byte_example \
 	edge_counter \
 	pwm_sk \
-	full_example \
 	uart \
 	spi \
 	game_pmod \
