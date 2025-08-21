@@ -26,6 +26,13 @@ def extract_number_from_filename(path: Path):
     m = re.match(r"^(\d+)", path.stem)
     return int(m.group(1)) if m else None
 
+def classify_type(number: int) -> str:
+    if number is None:
+        return "Simple"
+    if number < 16 or number in (32, 39): #hardcoded 32 and 39 to be full peripherals
+        return "Full"
+    return "Simple"
+
 def extract_from_md(path: Path):
     raw = path.read_text(encoding="utf-8", errors="ignore")
     md = strip_html_comments(raw)
@@ -36,7 +43,7 @@ def extract_from_md(path: Path):
         "name": None,
         "author": None,
         "file": path.name,
-        "type": "Full" if number is not None and number < 16 else "Simple"
+        "type": classify_type(number)
     }
 
     m = H1_RE.search(md)
