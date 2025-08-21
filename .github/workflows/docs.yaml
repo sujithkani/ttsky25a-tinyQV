@@ -20,7 +20,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: index_list.json  # Artifact name
-          path: ${{ github.workspace }}/docs/user_peripherals/index_list.json  # Path to the signed firmware
+          path: ${{ github.workspace }}/docs/user_peripherals/index_list.json  # Path and name of the file to be uploaded
 
       - name: Build docs
         uses: TinyTapeout/tt-gds-action/docs@ttsky25a
