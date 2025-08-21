@@ -49,4 +49,4 @@ Write 65 to register CHAR0. An "A" character should appear at the top left of th
 
 [TinyVGA PMOD](https://github.com/mole99/tiny-vga) for VGA output.
 
-![VGA console test](vga_grab.png)
+![VGA console test](vgaconsole_grab.png)
