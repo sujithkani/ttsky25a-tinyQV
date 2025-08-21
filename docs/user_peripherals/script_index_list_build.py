@@ -6,6 +6,10 @@ BASE_DIR = Path(__file__).parent
 OUT_MD   = BASE_DIR / "index_list.md"
 OUT_JSON = BASE_DIR / "index_list.json"
 
+REPO_URL = "https://github.com/TinyTapeout/ttsky25a-tinyQV"
+BRANCH   = "main"
+REL_PATH = "docs/user_peripherals"
+
 H1_RE = re.compile(r"^\s*#\s+(.+?)\s*$", re.MULTILINE)
 AUTHOR_LINE_RE = re.compile(r"^\s*(?:Author|Authors?)\s*:\s*(.+?)\s*$", re.IGNORECASE)
 
@@ -64,7 +68,9 @@ def main():
             num = it["number"] if it["number"] is not None else ""
             name = it["name"] or ""
             author = it["author"] or ""
-            f.write(f"| {num} | {name} | {author} | {it['type']} | [{it['file']}]({it['file']}) |\n")
+            # full GitHub link
+            url = f"{REPO_URL}/blob/{BRANCH}/{REL_PATH}/{it['file']}"
+            f.write(f"| {num} | {name} | {author} | {it['type']} | [{it['file']}]({url}) |\n")
 
     # JSON
     with OUT_JSON.open("w", encoding="utf-8") as f:

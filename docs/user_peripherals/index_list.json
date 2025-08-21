@@ -1,0 +1,149 @@
+[
+  {
+    "number": 3,
+    "name": "Gamepad Pmod peripheral",
+    "author": "Mike Bell",
+    "file": "03_game_pmod.md",
+    "type": "Full"
+  },
+  {
+    "number": 4,
+    "name": "Hal-precision Floating Point Unit (FPU)",
+    "author": "Diego Satizanal",
+    "file": "04_fpu.md",
+    "type": "Full"
+  },
+  {
+    "number": 5,
+    "name": "Baby VGA",
+    "author": "htfab",
+    "file": "05_baby_vga.md",
+    "type": "Full"
+  },
+  {
+    "number": 6,
+    "name": "WatchDog Timer",
+    "author": "Niklas Anderson",
+    "file": "06_wdt.md",
+    "type": "Full"
+  },
+  {
+    "number": 7,
+    "name": "PWL Synth",
+    "author": "Toivo Henningsson",
+    "file": "07_pwl_synth.md",
+    "type": "Full"
+  },
+  {
+    "number": 8,
+    "name": "prism",
+    "author": "Ken Pettit",
+    "file": "08_prism.md",
+    "type": "Full"
+  },
+  {
+    "number": 9,
+    "name": "DWARF Line Table Accelerator",
+    "author": "Laurie Hedge",
+    "file": "09_dwarf_line_table_accelerator.md",
+    "type": "Full"
+  },
+  {
+    "number": 10,
+    "name": "PDM: Pulse Density Modulation Decoder",
+    "author": "Jon Nordby, Martin Stensgård",
+    "file": "10_pdm.md",
+    "type": "Full"
+  },
+  {
+    "number": 11,
+    "name": "Pulse Transmitter",
+    "author": "Han",
+    "file": "11_pulse_transmitter.md",
+    "type": "Full"
+  },
+  {
+    "number": 12,
+    "name": "xoshiro128++ pseudorandom number generator",
+    "author": "Ciro Cattuto",
+    "file": "12_prng.md",
+    "type": "Full"
+  },
+  {
+    "number": 16,
+    "name": "Rotary Encoder",
+    "author": "Matt Venn",
+    "file": "16_encoder.md",
+    "type": "Simple"
+  },
+  {
+    "number": 17,
+    "name": "Edge Counter",
+    "author": "Uri Shaked",
+    "file": "17_edge_counter.md",
+    "type": "Simple"
+  },
+  {
+    "number": 18,
+    "name": "LED strip driver",
+    "author": "Ciro Cattuto",
+    "file": "18_ledstrip.md",
+    "type": "Simple"
+  },
+  {
+    "number": 19,
+    "name": "WS2812B impostor",
+    "author": "Javier MS",
+    "file": "19_impostor_WS2812b.md",
+    "type": "Simple"
+  },
+  {
+    "number": 20,
+    "name": "PWM",
+    "author": "Sujith Kani A.",
+    "file": "20_pwm.md",
+    "type": "Simple"
+  },
+  {
+    "number": 21,
+    "name": "8 bit PWM generator with adjustable frequency",
+    "author": "Matt Venn",
+    "file": "21_matt_pwm.md",
+    "type": "Simple"
+  },
+  {
+    "number": 22,
+    "name": "Spike_Encoder Pheriphral",
+    "author": "Riya & Anoushka",
+    "file": "22_spike.md",
+    "type": "Simple"
+  },
+  {
+    "number": 23,
+    "name": "Universal Segmented LED Driver",
+    "author": "Rebecca G. Bettencourt",
+    "file": "23_ubcd.md",
+    "type": "Simple"
+  },
+  {
+    "number": 24,
+    "name": "Hardware UTF Encoder/Decoder",
+    "author": "Rebecca G. Bettencourt",
+    "file": "24_hardware_utf8.md",
+    "type": "Simple"
+  },
+  {
+    "number": 25,
+    "name": "TinyQV Waveforms",
+    "author": "Meinhard Kissich",
+    "file": "25_waveforms.md",
+    "type": "Simple"
+  },
+  {
+    "number": 26,
+    "name": "Analog toolkit peripheral",
+    "author": "htfab",
+    "file": "26_analog_toolkit.md",
+    "type": "Simple"
+  }
+]
