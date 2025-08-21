@@ -29,7 +29,7 @@ def extract_number_from_filename(path: Path):
 def classify_type(number: int) -> str:
     if number is None:
         return "Simple"
-    if number < 16 or number in (32, 39): #hardcoded 32 and 39 to be full peripherals
+    if number < 16 or number in (32,33,34,35,36,37,38,39): #hardcoded 32 - 39 to be full peripherals
         return "Full"
     return "Simple"
 
