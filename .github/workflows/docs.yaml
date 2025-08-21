@@ -16,6 +16,12 @@ jobs:
         run: |
           python3 script_index_list_build.py
 
+      - name: Upload index_list.json as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: index_list.json  # Artifact name
+          path: ${{ github.workspace }}/docs/user_peripherals/index_list.json  # Path to the signed firmware
+
       - name: Build docs
         uses: TinyTapeout/tt-gds-action/docs@ttsky25a
         with:
