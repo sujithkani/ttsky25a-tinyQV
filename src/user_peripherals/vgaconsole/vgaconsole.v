@@ -38,33 +38,34 @@ module tqvp_cattuto_vgaconsole #(parameter CLOCK_MHZ=64) (
     localparam COLS_ADDR_WIDTH = $clog2(NUM_COLS);
     localparam CHARS_ADDR_WIDTH = $clog2(NUM_CHARS);
 
-    localparam REG_TEXT_COLOR = 6'h30;
-    localparam REG_BG_COLOR = 6'h31;
-    localparam REG_VGA = 6'h32;
+    localparam REG_BG_COLOR     = 6'h30;
+    localparam REG_TEXT_COLOR1  = 6'h31;
+    localparam REG_TEXT_COLOR2  = 6'h32;
+    localparam REG_VGA          = 6'h3F;
 
-    // Text buffer (7-bit chars)
-    reg [6:0] text[0:NUM_CHARS-1];
+    // Text buffer {1 bit color selector, 7-bit ASCII code}
+    reg [7:0] text[0:NUM_CHARS-1];
 
-    reg [5:0] text_color;   // Text color
+    reg [5:0] text_color1;  // Text color 1
+    reg [5:0] text_color2;  // Text color 2
     reg [5:0] bg_color;     // Background color
-    reg transparent;        // Transparency flag
-    
 
     // ----- HOST INTERFACE -----
     
     // Writes (only write lowest 8 bits)
-    always @(posedge clk or negedge rst_n) begin
+    always @(posedge clk) begin
         if (!rst_n) begin
             bg_color <= 6'b010000;
-            text_color <= 6'b001100;
-            transparent <= 0;
+            text_color1 <= 6'b001100;
+            text_color2 <= 6'b110011;
         end else begin
-            if (data_write_n != 2'b11) begin
+            if (~&data_write_n) begin
                 if (address < NUM_CHARS) begin
-                    text[address[CHARS_ADDR_WIDTH-1:0]] <= data_in[6:0];
-                end else if (address == REG_TEXT_COLOR) begin
-                    text_color <= data_in[5:0];
-                    transparent <= data_in[7];
+                    text[address[CHARS_ADDR_WIDTH-1:0]] <= data_in[7:0];
+                end else if (address == REG_TEXT_COLOR1) begin
+                    text_color1 <= data_in[5:0];
+                end else if (address == REG_TEXT_COLOR2) begin
+                    text_color2 <= data_in[5:0];
                 end else if (address == REG_BG_COLOR) begin
                     bg_color <= data_in[5:0];
                 end
@@ -73,21 +74,26 @@ module tqvp_cattuto_vgaconsole #(parameter CLOCK_MHZ=64) (
     end
 
     // Register reads
-    assign data_out = (address < NUM_CHARS) ? {25'h0, text[address[CHARS_ADDR_WIDTH-1:0]]} : 
-                      (address == REG_TEXT_COLOR) ? {24'h0, transparent, 1'b0, text_color} :
-                      (address == REG_BG_COLOR) ? {26'h0, bg_color} :
-                      (address == REG_VGA) ? {30'h0, vsync, blank} :
-                      32'h0;
-
-    // VGA status register
-    assign clear_interrupt = (address == REG_VGA) && (data_read_n != 2'b11);
+    assign data_out = (&address) ? {29'b0, hsync, vsync, interrupt} : 32'h0;  // REG_VGA
 
     // All reads complete in 1 clock
     assign data_ready = 1;
 
-    // Interrupt handling
-    wire vga_interrupt, clear_interrupt;
-    assign user_interrupt = vga_interrupt;
+    // --- Interrupt handling ---
+    reg interrupt;
+    assign user_interrupt = interrupt;
+
+    always @(posedge clk) begin
+        if (!rst_n) begin
+            interrupt <= 0;
+        end else begin
+            if ((~|y_lo) & (~|y_hi)) begin
+                interrupt <= 1;
+            end else if ((&address) & (~&data_read_n)) begin  // read REG_VGA
+                interrupt <= 0;
+            end
+        end
+    end
 
 
     // ----- VGA INTERFACE -----
@@ -102,8 +108,6 @@ module tqvp_cattuto_vgaconsole #(parameter CLOCK_MHZ=64) (
     // VGA signals
     wire hsync;
     wire vsync;
-    reg hsync_buf;
-    reg vsync_buf;
     wire blank;
     reg [1:0] R;
     reg [1:0] G;
@@ -114,7 +118,7 @@ module tqvp_cattuto_vgaconsole #(parameter CLOCK_MHZ=64) (
     wire [4:0] y_hi;
 
     // TinyVGA PMOD
-    assign uo_out = {hsync_buf, B[0], G[0], R[0], vsync_buf, B[1], G[1], R[1]};
+    assign uo_out = {hsync, B[0], G[0], R[0], vsync, B[1], G[1], R[1]};
 
     vga_timing_cc hvsync_gen (
         .clk(clk),
@@ -122,24 +126,21 @@ module tqvp_cattuto_vgaconsole #(parameter CLOCK_MHZ=64) (
         .hsync(hsync),
         .vsync(vsync),
         .blank(blank),
-        .interrupt(vga_interrupt),
-        .cli(clear_interrupt),
         .x_lo(pix_x[4:0]),
         .x_hi(pix_x[10:5]),
         .y_lo(y_lo),
         .y_hi(y_hi)
     );
 
-    wire valid_x = (|pix_x[10:5]) & (~&pix_x[9:5]);
+    assign pix_y = ({6'b0, y_hi} << 5) + ({6'b0, y_hi} << 4) + {5'b0, y_lo};  // pix_y = y_hi * 48 + y_lo
     wire [3:0] y_blk = pix_y[10:7];
-    wire valid_y = ~y_blk[3] & ~y_blk[2] & (y_blk[1] | y_blk[0]);
-    wire frame_active = valid_x & valid_y;
+
     //wire frame_active = ( pix_x >= VGA_FRAME_XMIN && pix_x < VGA_FRAME_XMAX &&
     //                        pix_y >= VGA_FRAME_YMIN && pix_y < VGA_FRAME_YMAX);
-
-    // (x,y) coordinates relative to frame
-    assign pix_y = ({6'b0, y_hi} << 5) + ({6'b0, y_hi} << 4) + {5'b0, y_lo};  // pix_y = y_hi * 48 + y_lo
-
+    wire valid_x = ~pix_x[10] & (|pix_x[9:5]) & ~(&pix_x[9:5]);
+    wire valid_y = ~y_blk[3] & ~y_blk[2] & (y_blk[1] | y_blk[0]);
+    wire frame_active = valid_x & valid_y;
+ 
     // Character pixels are 16x16 squares in the VGA frame.
     // Character glyphs are 5x7 and padded in a 6x8 character box.
 
@@ -165,13 +166,14 @@ module tqvp_cattuto_vgaconsole #(parameter CLOCK_MHZ=64) (
     end
 
     // (x,y) character coordinates in NUM_ROWS x NUM_COLS text buffer
-    wire [1:0] char_y = y_blk[1:0] - 2'd1;
+    wire [1:0] char_y = frame_active ? (y_blk[1:0] - 2'd1) : 2'd0;
 
     // Drive character ROM input
     //wire [6:0] char_index = text[char_y * NUM_COLS + char_x];
     wire [4:0] char_addr = ({3'd0, char_y} << 3) + ({3'd0, char_y} << 1) + char_x;  // we hardcode NUM_COLS = 10 to save gates
-    wire [4:0] char_addr_safe = (char_addr < NUM_CHARS) ? char_addr : 5'd0;
-    wire [6:0] char_index = text[char_addr_safe];
+    wire color_sel;
+    wire [6:0] char_index;
+    assign {color_sel, char_index} = text[char_addr];
 
     // Character pixel coordinates relative to the 5x7 glyph padded in a 6x8 character box
     wire [2:0] rel_y = pix_y[6:4];  // remainder of division by 16
@@ -182,15 +184,14 @@ module tqvp_cattuto_vgaconsole #(parameter CLOCK_MHZ=64) (
     // Look up character pixel value in character ROM,
     // handling 1-pixel padding along x and y directions.
     wire padding = (&rel_y) || rel_x_5;
-    wire char_pixel = (~padding) & char_data[padding ? 6'd0 : offset];
+    wire char_pixel = (~padding) & char_data[(frame_active & ~padding) ? offset : 6'd0];
 
     // Generate RGB signals
     wire pixel_on = frame_active & char_pixel;
+    wire [5:0] char_color = color_sel ? text_color2 : text_color1;
 
     always @(posedge clk) begin
-        vsync_buf <= vsync;
-        hsync_buf <= hsync;
-        {B, G, R} <= blank ? 6'b000000 : (pixel_on ? (~transparent ? text_color : text_color | bg_color) : bg_color);
+        {B, G, R} <= blank ? 6'b000000 : (pixel_on ? char_color : bg_color);
     end
 
     // ----- CHARACTER ROM -----
