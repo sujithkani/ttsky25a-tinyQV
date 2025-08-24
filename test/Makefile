@@ -24,6 +24,8 @@ USER_PERIPHERALS = \
 	pdm.test \
 	ubcd.test \
 	analog_toolkit.test \
+	CORDIC.test_trigonometric_simple CORDIC.test_linear_simple CORDIC.test_hyperbolic_vectoring_square_vis CORDIC.test_hyperbolic_vectoring_simple \
+	CORDIC.test_hyperbolic_rotating_sweep_and_vis CORDIC.test_hyperbolic_rotating_simple CORDIC.test_circular_rotating_sweep_and_vis
 
 .PHONY: all core prog peri $(USER_PERIPHERALS)
 
