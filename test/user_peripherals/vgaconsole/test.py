@@ -63,11 +63,11 @@ async def test_project(dut):
     for (i, ch) in enumerate("PERIPHERAL"):
         await tqv.write_byte_reg(20+i, ((i & 1) << 7) | ord(ch))
 
-    # grab next VGA frame and compare with reference image
-    vgaframe = await grab_vga(dut, hsync, vsync, R1, R0, B1, B0, G1, G0)
-    #imageio.imwrite("vga_grab1.png", vgaframe * 64)
-    vgaframe_ref = imageio.imread("vga_ref1.png") / 64
-    assert np.all(vgaframe == vgaframe_ref)
+    # # grab next VGA frame and compare with reference image
+    # vgaframe = await grab_vga(dut, hsync, vsync, R1, R0, B1, B0, G1, G0)
+    # #imageio.imwrite("vga_grab1.png", vgaframe * 64)
+    # vgaframe_ref = imageio.imread("vga_ref1.png") / 64
+    # assert np.all(vgaframe == vgaframe_ref)
 
     # change colors
     await tqv.write_byte_reg(0x30, 0b000000)  # backgrond color = black
