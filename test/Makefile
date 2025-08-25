@@ -24,6 +24,7 @@ USER_PERIPHERALS = \
 	pdm.test \
 	ubcd.test \
 	analog_toolkit.test \
+	rsa.test \
 
 .PHONY: all core prog peri $(USER_PERIPHERALS)
 
