@@ -8,6 +8,8 @@ from enum import IntEnum
 # The peripheral number is not used by the test harness.
 PERIPHERAL_NUM = 0
 
+def to_u32(x: int) -> int:
+    return x & 0xFFFFFFFF
 
 def angle_to_rad(angle):
     return angle * math.pi / 180.
@@ -80,12 +82,14 @@ async def read_out_pair_signed(dut, tqv, width=16):
 
     return sign_extend(out1, width), sign_extend(out2, width)
 
+
+
 async def test_sin_cos(dut, tqv, angle_deg, width=16, rtol=0.01, atol=0.01):
     
     angle_rad = angle_to_rad(angle_deg)
     angle_fixed_point = float_to_fixed(angle_rad, 16, 2)  # 16 bits, 2 integer bits
     dut._log.info(f"[CIRC ROT] angle={angle_deg:.3f}° rad={angle_rad:.6f} z={format_bin(angle_fixed_point, width)}")
-    await tqv.write_word_reg(1, angle_fixed_point)
+    await tqv.write_word_reg(1, to_u32(angle_fixed_point))
 
 
     # configure the cordic : set the mode to ROTATING, CIRCULAR, and running
@@ -117,7 +121,7 @@ async def test_sinh_cosh(dut, tqv, x, width=16, rtol=0.01, atol=0.01):
 
     angle_fixed_point = float_to_fixed(x, 16, 2)  # 16 bits, 2 integer bits
     dut._log.info(f"[HYPERBOLIC ROT] inp={x:.4f} z={format_bin(angle_fixed_point, width)}")
-    await tqv.write_word_reg(1, angle_fixed_point)
+    await tqv.write_word_reg(1, to_u32(angle_fixed_point))
 
     # configure the cordic : set the mode to ROTATING, hyperbolic, and running
     # this corresponds to setting it to       {1'b1,  2'b10,         1'b1 }
@@ -153,8 +157,8 @@ async def use_multiplication_mode_input_float(dut, tqv, a, b, alpha_one_position
     A = float_to_fixed(a, width=width, integer_part=XY_INT)
     B = float_to_fixed(b, width=width, integer_part=Z_INT)
 
-    await tqv.write_word_reg(1, A)
-    await tqv.write_word_reg(2, B)
+    await tqv.write_word_reg(1, to_u32(A))
+    await tqv.write_word_reg(2, to_u32(B))
     await tqv.write_byte_reg(3, alpha_one_position)
 
     # configure the cordic : set the mode to ROTATING, LINEAR, and running
@@ -192,8 +196,8 @@ async def use_division_mode_float_input(dut, tqv, a, b, alpha_one_position, widt
 
     dut._log.info(f"[LIN ROT MUL] a={a}, b={b}, A={format_bin(A,width)}, B={format_bin(B,width)}, alpha_pos={alpha_one_position}")
     dut._log.info(f"input to module is A={A}(float={a}, fixed={float_to_fixed(A, width, XY_INT)}), B={B}(float={b}, fixed={float_to_fixed(B, width, Z_INT)})")    
-    await tqv.write_word_reg(1, A)
-    await tqv.write_word_reg(2, B)
+    await tqv.write_word_reg(1, to_u32(A))
+    await tqv.write_word_reg(2, to_u32(B))
     await tqv.write_byte_reg(3, alpha_one_position)
     
     cfg = pack_config(Mode.LINEAR, is_rotating=0, start=1)
@@ -223,8 +227,8 @@ async def test_vectoring_hyperbolic(dut, tqv, a, b, alpha_one_position,
     y_float = float_to_fixed(b, 16, Z_INT)   # 16 bits, 5 integer bits
 
     # write the valeus 
-    await tqv.write_word_reg(1, x_float)
-    await tqv.write_word_reg(2, y_float)
+    await tqv.write_word_reg(1, to_u32(x_float))
+    await tqv.write_word_reg(2, to_u32(y_float))
 
     # configure the cordic : set the mode to Vectoring, Hyperbolic, and running
     # this corresponds to setting it to       {1'b0,  2'b10,         1'b1 }    
@@ -252,8 +256,8 @@ async def _run_vectoring_once(dut, tqv, x_float, y_float, WIDTH=16, XY_INT=5):
     A = float_to_fixed(x_float, WIDTH, XY_INT)
     B = float_to_fixed(y_float, WIDTH, XY_INT)
     
-    await tqv.write_word_reg(1, A) # write first input 
-    await tqv.write_word_reg(2, B) # write second input
+    await tqv.write_word_reg(1, to_u32(A)) # write first input 
+    await tqv.write_word_reg(2, to_u32(B)) # write second input
     
     # Configure Hyperbolic Vectoring mode
     cfg = pack_config(Mode.HYPERBOLIC, is_rotating=0, start=1)
