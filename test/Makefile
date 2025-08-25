@@ -1,8 +1,6 @@
 USER_PERIPHERALS = \
-	byte_example \
 	edge_counter \
 	pwm_sk \
-	full_example \
 	uart \
 	spi \
 	game_pmod \
@@ -17,8 +15,10 @@ USER_PERIPHERALS = \
 	prism.test \
 	pwl_synth.test \
 	wdt.test \
+	RV2A03.test \
 	tqvp_laurie_dwarf_line_table_accelerator.test \
 	pulse_transmitter.test \
+	crc32 \
 	prng.test \
 	hardware_utf8.test \
 	waveforms.test \
