@@ -6,7 +6,7 @@ from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
 
 from tqv import TinyQV
-from fixed_point import *
+from user_peripherals.CORDIC.fixed_point import *
 import math 
 import numpy as np
 from pathlib import Path
@@ -15,7 +15,7 @@ import os
 import matplotlib
 import matplotlib.pyplot as plt
 
-from test_utils import test_sin_cos
+from user_peripherals.CORDIC.test_utils import test_sin_cos
 
 matplotlib.use("Agg")  # headless backend
 
@@ -32,9 +32,7 @@ IS_ROTATING_BIT     = 3
 # When submitting your design, change this to the peripheral number
 # in peripherals.v.  e.g. if your design is i_user_peri05, set this to 5.
 # The peripheral number is not used by the test harness.
-PERIPHERAL_NUM = 16
-
-
+PERIPHERAL_NUM = 37
 
 @cocotb.test()
 async def test_trigonometric_sweep_and_vis(dut):

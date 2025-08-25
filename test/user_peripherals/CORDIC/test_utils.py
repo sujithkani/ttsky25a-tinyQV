@@ -74,6 +74,9 @@ async def wait_done(dut,tqv, busy_val = 1, done_val = 2,
 async def read_out_pair_signed(dut, tqv, width=16):
     out1 = await tqv.read_hword_reg(4)
     out2 = await tqv.read_hword_reg(5)
+    
+    out1 = out1 & 0b111111111111111111
+    out2 = out2 & 0b111111111111111111
 
     return sign_extend(out1, width), sign_extend(out2, width)
 

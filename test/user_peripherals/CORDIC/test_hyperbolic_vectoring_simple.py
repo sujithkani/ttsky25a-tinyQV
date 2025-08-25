@@ -6,16 +6,16 @@ from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
 
 from tqv import TinyQV
-from fixed_point import *
+from user_peripherals.CORDIC.fixed_point import *
 import math 
-from test_utils import test_vectoring_hyperbolic, _run_vectoring_once, assert_close
+from user_peripherals.CORDIC.test_utils import test_vectoring_hyperbolic, _run_vectoring_once, assert_close
 import numpy as np 
 import random
 
 # When submitting your design, change this to the peripheral number
 # in peripherals.v.  e.g. if your design is i_user_peri05, set this to 5.
 # The peripheral number is not used by the test harness.
-PERIPHERAL_NUM = 16
+PERIPHERAL_NUM = 37
 
 @cocotb.test()
 async def test_hyperbolic_vectoring_basic(dut):
