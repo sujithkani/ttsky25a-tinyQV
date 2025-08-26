@@ -26,6 +26,7 @@ USER_PERIPHERALS = \
 	ubcd.test \
 	analog_toolkit.test \
 	intercal_alu.test \
+	npu.test \
 
 .PHONY: all core prog peri $(USER_PERIPHERALS)
 
