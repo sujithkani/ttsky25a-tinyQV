@@ -8,7 +8,7 @@ from cocotb.triggers import ClockCycles
 
 from tqv import TinyQV
 
-PERIPHERAL_NUM = 37 
+PERIPHERAL_NUM = 39 
 
 # (Q,N) = (8,16) => 1 sign-bit + 7 integer-bits + 8 fractional-bits = 16 total-bits
 #                    |S|IIIIIII|FFFFFFFF|

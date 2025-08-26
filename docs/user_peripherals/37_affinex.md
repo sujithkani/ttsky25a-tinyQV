@@ -15,13 +15,13 @@ You can also include images in this folder and reference them in the markdown. E
 
 Author: Adam Gebregziaber
 
-Peripheral index: nn
+Peripheral index: 39
 
 ## What it does
 
 An affine transformation is a geometric transformation that combines linear transformation operations like rotation, scaling, shearing or reflection. These transformations are widely used in areas like computer graphics and image processing.
 
-The project implements a 2D affine transformation accelerator which is design to perform these operations in hardware using Q8.16 fixed point arithmetic.
+The project implements a 2D affine transformation accelerator which is designed to perform these operations in hardware using Q8.16 fixed point arithmetic.
 
 
 
