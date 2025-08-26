@@ -9,17 +9,32 @@
 `endif
 
 `define USE_PHASE_LATCHES
-//`define USE_NEW_READ
+`define USE_NEW_READ
 
 `define USE_SLOPE_EXP_REGS
 `define USE_PARAMS_REGS
 `define USE_SWEEP_REGS
 
+`define USE_3X_FLAG
+`define USE_X2N_FLAGS
+`define USE_COMMON_SAT
+`define USE_PWL_OSC
+`define USE_ORION_WAVE
+`define USE_ORION_MASK
+
 // Only used for verilator tests
 //// `define USE_TEST_INTERFACE
 
+`ifndef USE_NEW_READ
+`define USE_OLD_READ // if defined, the old read is used either as primary or extra read mechanism
+`endif
+`ifdef USE_TEST_INTERFACE
+`define USE_OLD_READ
+`endif
+
 `ifdef USE_NEW_REGMAP
-	`define CHANNEL_MODE_BITS 4
+//	`define CHANNEL_MODE_BITS 4
+	`define CHANNEL_MODE_BITS 9
 	`ifdef USE_NEW_REGMAP_B
 		`define REGS_PER_CHANNEL 8
 		`define REG_BITS 16 // Could be 13? If the registers don't grow too much
@@ -46,14 +61,30 @@
 
 // 0-2: detune_exp
 `define CHANNEL_MODE_BIT_NOISE 3
-// 4-7, 8-11: slope_exp
+//// 4-7, 8-11: slope_exp
+`define CHANNEL_MODE_BIT_3X 4
+`define CHANNEL_MODE_BIT_X2N0 5
+`define CHANNEL_MODE_BIT_X2N1 6
+`define CHANNEL_MODE_BIT_COMMON_SAT 7
+`define CHANNEL_MODE_BIT_PWL_OSC 8
+
+
+`define WF_BITS 2
+`define WF_OSC     0
+`define WF_NOISE   1
+`define WF_PWL_OSC 2
+`define WF_ORION   3
 
 
 `define DIVIDER_BITS 24
 `define SWEEP_DIR_BITS 3
 
 
+`ifdef USE_ORION_WAVE
+`define SRC1_SEL_BITS 4
+`else
 `define SRC1_SEL_BITS 3
+`endif
 `define SRC1_SEL_MANTISSA     3'd0
 `define SRC1_SEL_AMP          3'd1
 `define SRC1_SEL_SLOPE_OFFSET 3'd2
@@ -62,6 +93,9 @@
 `define SRC1_SEL_PHASE        3'd5
 `define SRC1_SEL_OUT_ACC      3'd6
 `define SRC1_SEL_AMP_TARGET   3'd7
+`ifdef USE_ORION_WAVE
+`define SRC1_SEL_ACC          4'd8
+`endif
 
 `define SRC2_SEL_BITS 3
 `define SRC2_SEL_ACC          3'd0
@@ -70,6 +104,9 @@
 `define SRC2_SEL_DETUNE       3'd3
 `define SRC2_SEL_PHASE_MODIFIED 3'd4
 `define SRC2_SEL_ZERO         3'd5
+`ifdef USE_ORION_WAVE
+`define SRC2_SEL_BITSHUFFLE_ACC 3'd6
+`endif
 
 `define DEST_SEL_BITS 2
 `define DEST_SEL_PHASE   2'd0
@@ -90,11 +127,21 @@
 `define STATE_BITS ($clog2(`STATE_LAST + 1))
 
 
-`define PART_SEL_BITS 2
-`define PART_SEL_ACC_MSB 0
+`define PRED_SEL_BITS 2
+`define PRED_SEL_OSC  0
+`define PRED_SEL_LFSR 1
+`define PRED_SEL_CMP  2
+`define PRED_SEL_READ_VALID 3
+
+
+`define PART_SEL_BITS 3
+//`define PART_SEL_ACC_MSB 0
+`define PART_SEL_SRC2_PRE_SIGN 0
 `define PART_SEL_SWEEP   1
 `define PART_SEL_NEQ     2
 `define PART_SEL_NOSAT   3
+`define PART_SEL_READ    4 // only used if USE_NEW_READ
+`define PART_SEL_ZERO    5 // only used if USE_ORION_WAVE
 
 
 // synced with SRC1_SEL_*** and register address bits
@@ -104,6 +151,9 @@
 `define SWEEP_INDEX_SLOPE0 2 // must be even
 `define SWEEP_INDEX_SLOPE1 3 // must be odd, should probably be SWEEP_INDEX_SLOPE0+1
 `define SWEEP_INDEX_PWM_OFFSET 4
+// Not used for sweeping, but for read-back
+`define SWEEP_INDEX_PHASE 5
+`define READ_INDEX_BITS 3
 
 
 // For test interface
