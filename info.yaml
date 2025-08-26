@@ -89,6 +89,8 @@ project:
     - "user_peripherals/ubcd/ubcd.v"
     - "user_peripherals/analog_toolkit/fp_counter.v"
     - "user_peripherals/analog_toolkit/peripheral.v"
+    - "user_peripherals/intercal_alu/intercal-alu.v"
+    - "user_peripherals/intercal_alu/peripheral.v"
     - "user_peripherals/CORDIC/tqvp_CORDIC.v"
     - "user_peripherals/CORDIC/CORDIC_angles_ROM_comb.v"
     - "user_peripherals/CORDIC/CORDIC_atanh_ROM_comb.v"

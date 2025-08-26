@@ -3,3 +3,4 @@ cocotb==1.9.2
 riscv-model==0.6.6
 numpy>=1.26
 matplotlib==3.10
+imageio
