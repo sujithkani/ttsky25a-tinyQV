@@ -101,6 +101,8 @@ project:
     - "tinyQV/cpu/latch_reg.v"
     - "tinyQV/cpu/time.v"
     - "tinyQV/peri/uart/uart_tx.v"
+    - "user_peripherals/affinex/mul.sv"
+    - "user_peripherals/affinex/tqvp_affinex.sv"
 
 
 # The pinout of your project. Leave unused pins blank. DO NOT delete or add any pins.
