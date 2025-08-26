@@ -784,7 +784,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .data_ready(data_ready_from_user_peri[21])
     );
 
-    tqvp_sohaib_npu i_user_peri38 (
+    tqvp_full_example_no_irq i_user_peri38 (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -801,7 +801,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .data_ready(data_ready_from_user_peri[22])
     );
 
-    tqvp_full_example_no_irq i_user_peri39 (
+    tqvp_sohaib_npu i_user_peri39 (
         .clk(clk),
         .rst_n(rst_n),
 
