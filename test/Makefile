@@ -6,6 +6,7 @@ USER_PERIPHERALS = \
 	game_pmod \
 	matt_encoder.test \
 	ledstrip.test \
+	vgaconsole.test \
 	impostor_ws2812b.test \
 	matt_pwm.test \
     test_spike  \
@@ -24,7 +25,8 @@ USER_PERIPHERALS = \
 	pdm.test \
 	ubcd.test \
 	analog_toolkit.test \
-	affinex.test \
+	intercal_alu.test \
+  affinex.test \
 
 .PHONY: all core prog peri $(USER_PERIPHERALS)
 
