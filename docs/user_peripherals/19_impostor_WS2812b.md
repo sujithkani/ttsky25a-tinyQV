@@ -54,7 +54,7 @@ The peripheral allows tuning of internal timing thresholds by writing 16-bit val
  Is calculated as idle_ticks=50000/(clk_preiod_ns), for example with a clock of 64Mhz (or T=15.625ns) idle_ticks=50000/15,625=3200
 - `shadow_threshold_cycles` defines the pulse width threshold (in clock cycles) to determine if a bit is a `1` or a `0` 900 ns.    
 Is calculated as threshold_cycles=900/(clk_preiod_ns), for example with a clock of 64Mhz (or T=15.625ns) threshold_cycles=900/15,625=58 (57.6)
-These values **only take effect** after writing to `prescaler_commit` (address `0x03`), making the update atomic.
+These values **only take effect** after writing to `prescaler_commit` (address `0x05`), making the update atomic.
 The default preescaler values after reset are 3840 and 38, configured to work with a clock ≈62.5 MHz (T=16ns sharp), but probably there is enough wiggle room in the ws2812b timing tolerances to work with 64Mhz aswel with default configurations.    
 
 ## How to Test
@@ -62,7 +62,7 @@ The default preescaler values after reset are 3840 and 38, configured to work wi
 1. (Optional) Adjust timing parameters if needed: (prescalers are for 62.5 MHz clock by default after reset)
    - Write a new 32-bit `idle_ticks` value to addresses `0x04–0x07`
    - Write a new 32-bit `threshold_cycles` value to addresses `0x0C–0x0F`
-   - Write any value (e.g. `0xFF`) to address `0x03` to **commit** the new values
+   - Write any value to `prescaler_commit` (e.g. `0xFF`) to address `0x05` to **commit** the new values
 
 2.  (Optional) Select DIN input:(DIN is `ui_in[1]` by default after reset)
    - Write a new 8-bit `din_select` value to addresses `0x010`
@@ -81,7 +81,7 @@ The default preescaler values after reset are 3840 and 38, configured to work wi
    - `reg_b` (0x02) for BLUE
 
 7. To acknowledge the received data and re-arm the peripheral:
-   - Write `0x00` to the `rgb_clear` register (0x0E)
+   - Write `0x00` to the `rgb_clear` register (0x03)
    - The `rgb_ready` flag will automatically reset to `0x00`
 
 ## External Hardware
