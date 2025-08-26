@@ -22,7 +22,7 @@ Document the registers that are used to interact with your peripheral
 | --------- | ------- | -------- | ----------------------------------------------------------------------------- |
 | 0x01      | DAT     | W        | packed 4 int4 weights and 4 int4 activations to send to the mac array         |
 | 0x02      | ACC     | RW       | Initialize or read the int16 accumulation register                            |
-| 0x04      | SHAMT   | W        | The shift amount used for scaling the output, must be in range [15, 31]       |
+| 0x04      | SHAMT   | W        | The shift amount used for scaling the output, must be in range [0, 31]        |
 | 0x08      | QMUL    | W        | The uin15 quantized multiplier used for scaling the output                    |
 | 0x10      | RELU_ZP | W        | data_in[0] whether to apply RELU / data_in[1:4] output int4 zero point        |
 
