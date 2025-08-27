@@ -20,7 +20,10 @@ USER_PERIPHERALS = \
 	pulse_transmitter.test \
 	crc32 \
 	prng.test \
-	hardware_utf8.test \
+	hardware_utf8.test
+
+# Add new tests to this list
+USER_PERIPHERALS_B = \
 	waveforms.test \
 	pdm.test \
 	ubcd.test \
@@ -29,7 +32,7 @@ USER_PERIPHERALS = \
 	CORDIC.test_trigonometric_simple CORDIC.test_linear_simple CORDIC.test_hyperbolic_vectoring_square_vis CORDIC.test_hyperbolic_vectoring_simple \
 	CORDIC.test_hyperbolic_rotating_sweep_and_vis CORDIC.test_hyperbolic_rotating_simple CORDIC.test_circular_rotating_sweep_and_vis
 
-.PHONY: all core prog peri $(USER_PERIPHERALS)
+.PHONY: all core prog peri $(USER_PERIPHERALS) $(USER_PERIPHERALS_B)
 
 %-results.xml:
 	@make -f test_$*.mk clean
@@ -46,7 +49,7 @@ peri-%.xml:
 	@mv sim_build/rtl/tb.fst $*-rtl.fst || true
 	@mv sim_build/gl/tb.fst $*-gl.fst || true
 
-all: clean basic-results.xml prog-results.xml $(USER_PERIPHERALS:%=peri-%.xml)
+all: clean basic-results.xml prog-results.xml $(USER_PERIPHERALS:%=peri-%.xml) $(USER_PERIPHERALS_B:%=peri-%.xml)
 	@cat *results.xml peri-*.xml > results.xml
 
 core: clean basic-results.xml
@@ -58,7 +61,12 @@ prog: clean prog-results.xml
 peri: clean $(USER_PERIPHERALS:%=peri-%.xml)
 	@cat peri-*.xml > results.xml
 
+peri_b: clean $(USER_PERIPHERALS_B:%=peri-%.xml)
+	@cat peri-*.xml > results.xml
+
 $(USER_PERIPHERALS): %: peri-%.xml
+
+$(USER_PERIPHERALS_B): %: peri-%.xml
 
 clean:
 	rm *results.xml peri-*.xml *.fst sim_build/rtl/tb.fst sim_build/gl/tb.fst || true

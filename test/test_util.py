@@ -142,12 +142,12 @@ async def start_write(dut, addr):
 
 nibble_shift_order = [4, 0, 12, 8, 20, 16, 28, 24]
 
-async def send_instr(dut, data, ok_to_exit=False):
+async def send_instr(dut, data, ok_to_exit=False, allow_long_delay=False):
     instr_len = 8 if (data & 3) == 3 else 4
     for i in range(instr_len):
         dut.qspi_data_in.value = (data >> (nibble_shift_order[i])) & 0xF
         await ClockCycles(dut.clk, 1, False)
-        for _ in range(20):
+        for _ in range(400 if allow_long_delay else 20):
             if ok_to_exit and dut.qspi_flash_select.value == 1:
                 return
             assert dut.qspi_flash_select.value == 0
@@ -255,7 +255,7 @@ async def read_byte(dut, reg, expected_val):
 
   await stop_nops()
 
-async def expect_store(dut, addr, bytes=4):
+async def expect_store(dut, addr, bytes=4, allow_long_delay=False):
     if addr >= 0x1800000:
         select = dut.qspi_ram_b_select
     elif addr >= 0x1000000:
@@ -280,7 +280,7 @@ async def expect_store(dut, addr, bytes=4):
             assert select.value == 1
             break
         elif dut.qspi_flash_select.value == 0:
-            await send_instr(dut, 0x0001, True)
+            await send_instr(dut, 0x0001, True, allow_long_delay)
         else:
             await ClockCycles(dut.clk, 1, False)
     else:
@@ -299,12 +299,12 @@ async def expect_store(dut, addr, bytes=4):
 
     return val
 
-async def read_reg(dut, reg):
+async def read_reg(dut, reg, allow_long_delay=False):
     offset = random.randint(-0x400, 0x3FF)
     instr = InstructionSW(gp, reg, offset).encode()
     await send_instr(dut, instr)
 
-    return await expect_store(dut, 0x1000400 + offset)
+    return await expect_store(dut, 0x1000400 + offset, 4, allow_long_delay)
 
 async def set_all_outputs_to_peripheral(dut, peripheral_num):
     await send_instr(dut, InstructionADDI(a0, x0, 0xc0).encode())
