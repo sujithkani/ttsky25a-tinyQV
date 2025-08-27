@@ -208,7 +208,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
     // --------------------------------------------------------------------- //
     // Full interface peripherals
 
-    tqvp_full_empty i_user_peri04(
+    tqvp_sohaib_npu i_user_peri04(
         .clk(clk),
         .rst_n(rst_n),
 

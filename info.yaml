@@ -100,6 +100,7 @@ project:
     - "user_peripherals/CORDIC/CORDIC_iteration.v"
     - "user_peripherals/CORDIC/CORDIC.v"
     - "user_peripherals/CORDIC/defines.v"
+    - "user_peripherals/npu/peripheral.v"
     - "tinyQV/cpu/tinyqv.v"
     - "tinyQV/cpu/alu.v"
     - "tinyQV/cpu/core.v"
