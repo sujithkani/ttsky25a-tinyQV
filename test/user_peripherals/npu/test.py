@@ -12,7 +12,7 @@ import random
 from pathlib import Path
 
 import numpy as np
-from utils import *
+from user_peripherals.npu.utils import *
 
 # When submitting your design, change this to the peripheral number
 # in peripherals.v.  e.g. if your design is i_user_peri05, set this to 5.
