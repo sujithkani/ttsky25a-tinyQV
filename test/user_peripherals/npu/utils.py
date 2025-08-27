@@ -154,7 +154,7 @@ async def tb_qfc(tqv, input, weight, bias, output_zp, qmul, shamt,
     tiled_inp = tiled(input, acc_depth, nrows)
     pbar = tqdm(total=m * n, desc=f"fully connected {k, n}, B={m}", display=progress)
 
-    await tqv.write_word_reg(0x10, output_zp << 1 | relu)
+    await tqv.write_word_reg(0x10, (output_zp & 0xF) << 1 | relu)
 
     result = []
     for nn in range(tiled_w.shape[1]):
@@ -195,7 +195,7 @@ class CocotbModel:
     def _parse_op(self, op):
         match op["op"]:
             case "fully_connected":
-                qparams = {k: np.array(v) for k, v in op["qparams"].items()}
+                qparams = {k: np.array(v) if isinstance(v, list) else v for k, v in op["qparams"].items()}
                 tensors = {k: self._extract_tensor(v)  for k, v in op["args"].items()}
                 return functools.partial(tb_qfc, self.tqv, **tensors, **qparams, relu=op["act"] == "RELU",
                     width=self.width, acc_width=self.acc_width, nrows=self.nrows, ncols=self.ncols)
