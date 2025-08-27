@@ -17,7 +17,7 @@ from user_peripherals.npu.utils import *
 # When submitting your design, change this to the peripheral number
 # in peripherals.v.  e.g. if your design is i_user_peri05, set this to 5.
 # The peripheral number is not used by the test harness.
-PERIPHERAL_NUM = 39
+PERIPHERAL_NUM = 4
 FAST = int(os.getenv("FAST", 0)) # skip the mlp test
 NCOLS = 1
 NROWS = 4

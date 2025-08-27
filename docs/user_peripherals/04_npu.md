@@ -2,7 +2,7 @@
 
 Author: Sohaib Errabii
 
-Peripheral index: 39
+Peripheral index: 4
 
 ## What it does
 
@@ -11,7 +11,7 @@ of google's litert (see https://ai.google.dev/edge/litert/models/quantization_sp
 
 The peripheral contains four int4 MACs in chain, an int16 accumulation register and a scaler unit
 for scaling the int16 accumulation back to int4 by performing a saturating mulh between uint15 and int16 (5bits at a time for a latency of 4cycles).
-![NPU Diagram](13_npu_diagram.svg)
+![NPU Diagram](04_npu_diagram.svg)
 
 
 ## Register map
