@@ -43,10 +43,10 @@ The transmission level and duration is described by a 2-bit **symbol**.
 ### Modes of operation
 The pulse transmitter supports either 1bpe (default) or 2bpe mode.
 
-| Mode                     | Description                                                                                         |
-|--------------------------|-----------------------------------------------------------------------------------------------------|
-| 1bpe (1 bit per element) | Support up to 256 elements, each 1-bit element is expanded to 2, 2-bit symbols via a lookup table   |
-| 2bpe (2 bit per element) | Support up to 128 elements, each 2-bit element is directly mapped to a 2-bit symbol                 |
+| Mode                     | Description    |
+|--------------------------|----------------|
+| 1bpe (1 bit per element) | Support up to 256 elements, each 1-bit element is expanded to 2, 2-bit symbols via a lookup table. The program counter increments/decrements by 1 per element (2 symbols). |
+| 2bpe (2 bit per element) | Support up to 128 elements, each 2-bit element is directly mapped to a 2-bit symbol. The program counter increments/decrements by 2 per element. As such `program_start_index`, `program_end_index` and `program_end_loopback_index` must be a multiple of 2. |
 
 As described, in 1bpe mode, each bit in program data memory is expanded to 2 symbols.
 | Value  | First symbol       |  Second symbol     |
@@ -80,10 +80,10 @@ The carrier timer is a 11 bit timer that generates a fixed 50% duty cycle square
 You can specify at what position in the buffer the program starts, stops, or loopback to. You can choose to not loop, loop up a certain number of times or loop forever. Moreover, instead of counting up, you can count down and send bits in reverse.
 
 ### Interrupts
-Interrupts can be enabled for certain events like whenever a element is transmitted, whenever the program loops, whenever the program counter reaches the half of the full capacity, or when the program completes. This may be useful in helping to refill the program data memory manually (in the absence of a FIFO) to enable continuous transmission.
+Interrupts can be enabled for certain events like whenever a element is transmitted, whenever the program loops, whenever the program counter reaches the half of the full capacity, or when the program completes. This may be useful in helping to refill the program data memory manually (in the absence of a FIFO) to enable continuous transmission. Note that interrupts (if enabled) are not automatically cleared when the program is started/terminated; you have to deliberately clear it.
 
 ### Program status
-You can check the program counter, the program loop counter and whether a program is running by reading this peripheral. This may be useful to check for the completion of the program or for busy-waiting. 
+You can check the program counter, the program loop counter and whether a program is running by reading this peripheral. This may be useful to check for the progress of the program or for busy-waiting for the completion of the program. ⚠️Note that `program_counter` and `program_loop_counter` may be ahead of the currently transmitted symbol as they are incremented/decremented **before** the completion of the transmission of the symbol as a means of prefetching the next symbol data.
 
 ## Register map
 | Address     | Name              | Access |
@@ -176,18 +176,18 @@ A fixed 32 bits of data are assigned to the `data_out` register within this peri
 | 31:24 | *unused* (value of 0)                |
 
 ## Pin mappings
-| Pin       | Value          | Description                             |
-|-----------|----------------|-----------------------------------------|
-| uo_out[0] | valid_output   | High when output is active              |
-| uo_out[1] | valid_output   | High when output is active              |
-| uo_out[2] | user_interrupt | High when any interrupt is asserted     |
-| uo_out[3] | carrier_out    | Square wave from carrier                |
-| uo_out[4] | carrier_out    | Square wave from carrier                |
-| uo_out[5] | final_output   | Pulse transmitter output                |
-| uo_out[6] | final_output   | Pulse transmitter output                |
-| uo_out[7] | final_output   | Pulse transmitter output                |
+| Pin       | Value                        | Description                             |
+|-----------|------------------------------|-----------------------------------------|
+| uo_out[0] | valid_output                 | High when program is running            |
+| uo_out[1] | valid_output                 | High when program is running            |
+| uo_out[2] | user_interrupt               | High when any interrupt is asserted     |
+| uo_out[3] | symbol_toggle_or_idle_output | At `idle_level` when program is not running. Starts low and toggle every time a symbol has completed sending. `invert_output` has no effect |
+| uo_out[4] | carrier_or_zero_output       | Low when program is not running. Starts low and toggles at the desired frequency to produce a square wave. `invert_output`, `idle_level`and `carrier_en` has no effect |
+| uo_out[5] | final_output                 | At `idle_level` when program is not running. Pulse data output. `invert_output` applies to both idle level and pulse data |
+| uo_out[6] | final_output                 | At `idle_level` when program is not running. Pulse data output. `invert_output` applies to both idle level and pulse data |
+| uo_out[7] | final_output                 | At `idle_level` when program is not running. Pulse data output. `invert_output` applies to both idle level and pulse data |
 
-Note, the pins are duplicated to allow for some flexibility.
+Note, some pins are duplicated to allow for some flexibility.
 
 ## How to test
 ### Use with TinyQV C SDK
@@ -285,9 +285,9 @@ typedef union {
 
 typedef union {
     struct {
-        uint8_t timer_interrupt_status               : 1; // [0]
-        uint8_t program_loop_interrupt               : 1; // [1]
-        uint8_t program_end_interrupt                : 1; // [2]
+        uint8_t timer_interrupt_status_status        : 1; // [0]
+        uint8_t program_loop_interrupt_status        : 1; // [1]
+        uint8_t program_end_interrupt_status         : 1; // [2]
         uint8_t program_counter_mid_interrupt_status : 1; // [3]
         uint8_t program_status                       : 1; // [4]
         uint8_t _unused_reg_0                        : 3; // [7:5]
@@ -298,14 +298,14 @@ typedef union {
 typedef union {
     struct {
         uint32_t timer_interrupt_status               : 1; // [0]
-        uint32_t program_loop_interrupt               : 1; // [1]
-        uint32_t program_end_interrupt                : 1; // [2]
+        uint32_t program_loop_interrupt_status        : 1; // [1]
+        uint32_t program_end_interrupt_status         : 1; // [2]
         uint32_t program_counter_mid_interrupt_status : 1; // [3]
         uint32_t program_status                       : 1; // [4]
         uint32_t _unused_reg_a                        : 3; // [7:5]
-        uint32_t program_loop_counter                 : 8;  // [15:8]
-        uint32_t program_counter                      : 8;  // [23:16]
-        uint32_t _unused_reg_b                        : 8;  // [31:24]
+        uint32_t program_counter                      : 8; // [15:8]
+        uint32_t program_loop_counter                 : 8; // [23:16]
+        uint32_t _unused_reg_b                        : 8; // [31:24]
     };
     uint32_t val;   
 } pulse_transmitter_read_reg_t;
@@ -345,17 +345,17 @@ int main() {
     reg_1.program_end_index = 33; // We need to add extra 1 bit for the header, and 1 bit for the stop bit
     
     // For the duration and timer, it can be calculated by
-    // For 21 MHz, 1 tick is 47.619 ns
-    // For 64 MHz, 1 tick is 15.625 ns
+    // For 21 MHz main clock frequency, 1 tick is 47.619 ns
+    // For 64 MHz main clock frequency, 1 tick is 15.625 ns
     // total duration ticks = (duration + 2) << prescaler. (or just (duration + 2) * 2ᵖʳᵉˢᶜᵃˡᵉʳ)
     //
-    // For 21 MHz,
+    // For 21 MHz main clock frequency,
     // For 563 us, we want 11823 ticks.
     // For 1687 us, we want 35427 ticks.
     // For 9 ms, we want 189000 ticks
     // For 4.5 ms, we want 94500 ticks
     //
-    // For 64 MHz,
+    // For 64 MHz main clock frequency,
     // For 563 us, we want 36032 ticks.
     // For 1687 us, we want 107968 ticks.
     // For 9 ms, we want 576000 ticks
@@ -382,7 +382,7 @@ int main() {
     // pulse_transmitter_write_reg_4_t reg_4 = {0};
     // reg_4.carrier_duration = 274;
 
-    // These numbers are for 64 MHz clock
+    // These numbers are for 64 MHz main clock frequency
     pulse_transmitter_write_reg_2_t reg_2 = {0};
     reg_2.main_low_duration_a = 68;  // Approximately 563 us
     reg_2.main_low_duration_b = 209; // Approximately 1687 us
@@ -427,7 +427,7 @@ int main() {
 ```
 
 #### [Example] WS2812B Addressable LED
-The WS2812B needs the bits to be sent MSB (Most Significant Bit) first. Reversing the bits using the CPU is highly inefficient (at least without the bit reverse instruction). Thankfully, we can take advantage of a trick where program counter can count down instead, this effectively sends the bits in reverse. In this example, you should expect 2 connected WS2812B LEDs to light up and animate between colours.
+The WS2812B needs the bits to be sent MSB (Most Significant Bit) first. Reversing the bits using the CPU is highly inefficient (at least without the bit reverse instruction). Thankfully, we can take advantage of a trick where program counter can count down instead, this effectively sends the bits in reverse. In this example, you should expect 2 connected WS2812B LEDs to light up and animate between colours. This animation loops forever.
 
 ![WS2812B Addressable LED Timing Diagram](11_pulse_transmitter_WS2812B.drawio.svg)
 
@@ -459,28 +459,28 @@ int main() {
     reg_1.program_loop_count = 1;
  
     // For the duration and timer, it can be calculated by
-    // For 21 MHz, 1 tick is 47.619 ns
-    // For 64 MHz, 1 tick is 15.625 ns
+    // For 21 MHz main clock frequency, 1 tick is 47.619 ns
+    // For 64 MHz main clock frequency, 1 tick is 15.625 ns
     // total duration ticks = (duration + 2) << prescaler. (or just (duration + 2) * 2ᵖʳᵉˢᶜᵃˡᵉʳ)
     //
     // We do not need any prescaler.
     //
-    // For 21 MHz,
+    // For 21 MHz main clock frequency,
     // For 350 ns, we want 7 ticks.
     // For 850 ns, we want 18 ticks.
     //
-    // For 64 MHz,
+    // For 64 MHz main clock frequency,
     // For 350 ns, we want 22 ticks.
     // For 850 ns, we want 54 ticks.
 
-    // These numbers are for 21 MHz clock (not 64 MHz) 
+    // These numbers are for 21 MHz main clock frequency (not 64 MHz) 
     // pulse_transmitter_write_reg_2_t reg_2 = {0};
     // reg_2.main_low_duration_a = 16;  // Approximately 850 ns
     // reg_2.main_low_duration_b = 5;   // Approximately 350 ns
     // reg_2.main_high_duration_a = 5;  // Approximately 350 ns
     // reg_2.main_high_duration_b = 16;  // Approximately 850 ns
 
-    // These numbers are for 64 MHz clock
+    // These numbers are for 64 MHz main clock frequency
     pulse_transmitter_write_reg_2_t reg_2 = {0};
     reg_2.main_low_duration_a = 52;  // Approximately 850 ns
     reg_2.main_low_duration_b = 20;   // Approximately 350 ns
@@ -521,8 +521,8 @@ int main() {
 }
 ```
 
-#### [Extra Example] Driving Serial Devices like the 74HC595 Shift Register / SPI Mode 0 Devices
-While the pulse transmitter peripheral is only single channel, signals like the carrier output is exposed. Since both the carrier timer and the program counter uses the same clock, in some scenarios, the carrier output may be repurposed as a clock signal for the 74HC595 Shift Register. The serial data in the program data memory can streamed out. In this example, you should expect the 8 shift register outputs to count in a binary sequence. 
+#### [Extra Experimental Example] Driving Serial Devices like the 74HC595 Shift Register / SPI Mode 0/2 Devices
+While the pulse transmitter peripheral is only single channel, signals like the `symbol_toggle_or_idle_output` and `carrier_or_zero_output` is exposed. The `symbol_toggle_or_idle_output` signal can be used as a clock signal for the 74HC595 Shift Register. The serial data in the program data memory can streamed out. In this example, you should expect the 8 shift register outputs to count in a binary sequence. This procedure loops forever. 
 
 ![74HC595 Timing Diagram](11_pulse_transmitter_74HC595.drawio.svg)
 
@@ -536,23 +536,31 @@ int main() {
     // Connect OE (Output Enable) to GND, to enable the shift register output
     // Connect SRCLR (Shift Register Clear) to VCC since we are not using this feature
 
-    set_gpio_func(3, 1);  // Connect RCLK (Latch) to a GPIO 3 (Actual is uo[3] aka out3)
-    set_gpio_func(4, 11); // Connect SRCLK (Storage Register Clock) to our carrier_out of our pulse transmitter peripheral
-    set_gpio_func(5, 11); // Connect SER (Serial Data) to our final_output of our pulse transmitter peripheral
+    set_gpio_func(2, 1);  // Connect RCLK (Latch) to GPIO 2 (Actual is uo[2] aka out2)
+    set_gpio_func(3, 11); // Connect SRCLK (Storage Register Clock) to the symbol_toggle_or_idle_output of our pulse transmitter peripheral
+    set_gpio_func(5, 11); // Connect SER (Serial Data) to the final_output of our pulse transmitter peripheral
 
-    gpio_off(3);
+    gpio_off(2);
 
     // We want to clock in the data at 8 MHz.
     // Since we are using 1bpe mode, each bit is 2 symbols.
     // By setting the duration value to 2. So each symbol takes 4 ticks.
     // As such the total duration for these 2 symbols is 8 ticks.
     //
-    // Coincidentally, the carrier output starts at low level and toggles thereafter.
+    // To generate the clock signal there are 2 methods:
+    // We can simply hook up the clock pin of the shift register to the symbol_toggle_or_idle_output.
+    // Since each element is 2 symbols, and the symbol_toggle_or_idle_output starts low, and toggles every time a symbol has completed sending,
+    // we have generated the required signal.
+    //
+    // Alternatively, the carrier output starts at low level and toggles thereafter.
     // This is compatible with the driving waveforms of a 74HC595 Shift Register.
     // We want to toggle the clock every 4 ticks. So set carrier_duration to 3.
+    // pulse_transmitter_write_reg_4_t reg_4 = {0};
+    // reg_4.carrier_duration = 3;
     //
-    // Note, with a main system frequency of 64 MHz, the maximum achievable frequency is 16 MHz.
+    // In 1bpe mode, with a main clock frequency of 64 MHz, the maximum achievable data clock frequency is 16 MHz.
 
+    // We just duplicate the symbol transmit level
     pulse_transmitter_write_reg_0_t reg_0 = {0};
     reg_0.low_symbol_0 = 0b00;
     reg_0.low_symbol_1 = 0b00;
@@ -561,13 +569,10 @@ int main() {
 
     pulse_transmitter_write_reg_1_t reg_1 = {0};
     reg_1.program_end_index = 7; // So 8 bits of data
-
+    
     pulse_transmitter_write_reg_2_t reg_2 = {0};
     reg_2.main_low_duration_a = 2;
     reg_2.main_high_duration_a = 2;
-
-    pulse_transmitter_write_reg_4_t reg_4 = {0};
-    reg_4.carrier_duration = 3;
 
     pulse_transmitter_write8_reg_0_t reg8_0 = {0};
     reg8_0.start_program = 1;
@@ -575,8 +580,7 @@ int main() {
     *(volatile uint32_t *)(PULSE_TRANSMITTER_ADDRESS) = reg_0.val;
     *(volatile uint32_t *)(PULSE_TRANSMITTER_ADDRESS + 4) = reg_1.val;
     *(volatile uint32_t *)(PULSE_TRANSMITTER_ADDRESS + 8) = reg_2.val;
-    *(volatile uint32_t *)(PULSE_TRANSMITTER_ADDRESS + 16) = reg_4.val;
-
+    //*(volatile uint32_t *)(PULSE_TRANSMITTER_ADDRESS + 16) = reg_4.val;   
 
     uint8_t i = 0;
 
@@ -611,8 +615,8 @@ int main() {
         // Latch the data manually.
         // There is an alternative approach, which is to directly connect the latch to user_interrupt pin and use program_end_interrupt_en (but its less flexible)
         // There is yet another alternative approach, which is to hook up a ISR, and control the pin in the ISR (but keep in mind of the large interrupt latency)
-        gpio_on(3);
-        gpio_off(3);
+        gpio_on(2);
+        gpio_off(2);
 
         i += 1;
 
@@ -620,5 +624,248 @@ int main() {
     }
 }
 ```
+
+#### [Extra Experimental Example] Driving Digital-to-analog Converters using Phillips I2S & Left/Right Justified
+The pulse transmitter can be used to drive a suitable DAC like the PCM5102A which do not require a MCLK. While the peripheral is only single channel, signals like `symbol_toggle_or_idle_output` and `carrier_or_zero_output` is exposed. The `symbol_toggle_or_idle_output` signal can be used as a bit clock signal while the `carrier_or_zero_output` is used as the word clock. However, it may be non-trivial to output a bit clock frequency perfectly matches for example 32000 * 32 Hz. With a main clock frequency of 63.5 MHz, the error is less than 0.02%. With a main clock frequency of 64 MHz, the output is off by 0.8%, this might still be acceptable to some DACs. In this example, the stereo DAC is driven at a 32kHz sample rate. You should expect the a sawtooth tone of 440 Hz to be generated. Next, the previous tone is turned off, and a sawtooth tone of 660 Hz is generated. Next, both tones are simultaneously enabled. Next, both tones are disabled. This procedure loops forever.
+
+![I2S Timing Diagram](11_pulse_transmitter_I2S.drawio.svg)
+![I2S Audio Diagram](11_pulse_transmitter_I2S.png)
+
+```
+#define SAMPLE_RATE   32000
+#define VOLUME_REDUCTION 4
+
+// Frequencies of the two oscillators
+#define FREQ_A         440   // A4
+#define FREQ_B         660   // E5
+
+#define PHASE_STEP(freq)  ((uint32_t)((((uint64_t)(freq) << 32) / SAMPLE_RATE)))
+
+volatile uint32_t accm_a = 0;
+volatile uint32_t accm_b = 0;
+
+volatile uint8_t osc_enabled = 0b00000011;
+
+static inline uint32_t calculate_sample(uint8_t osc_enabled, uint32_t accm_a, uint32_t accm_b);
+
+void process();
+
+int main() {
+    // Enable all outputs (ensure they are not in debug mode)
+    enable_all_outputs();
+
+    // Depending on your DAC, you might also need to ensure it is properly configured and not muted.
+    set_gpio_func(2, 1);  // GPIO 2 for debugging purposes
+    set_gpio_func(3, 11); // Connect BCLK (Also called SCK) to the symbol_toggle_or_idle_output of our pulse transmitter peripheral
+    set_gpio_func(4, 11); // Connect LRCLK (Also called WS) to the carrier_or_zero_output of our pulse transmitter peripheral
+    set_gpio_func(5, 11); // Connect DIN (Serial Data) to the final_output of our pulse transmitter peripheral
+
+    gpio_off(2);
+
+    // I2S needs the bits to be sent MSB (Most Significant Bit) first, so we down count.
+    // For a single sample of audio, we can send 16 bits of data for the left and 16 bits of data for the right.
+    // We want continous transmission, so loop_forever is enabled.
+    //
+    // In this example, interrupts as are not used to fill the buffer (in the absence of a FIFO),
+    // as interrupts on tinyQV have quite a large overhead.
+    //
+    // Do note that due to the small program memory, we need to process and write new data within a limited amount of time.
+    // Otherwise, glitches in the audio may appear.
+
+    // We just duplicate the symbol transmit level
+    pulse_transmitter_write_reg_0_t reg_0 = {0};
+    reg_0.downcount = 1;
+    reg_0.loop_forever = 1;
+    reg_0.low_symbol_0 = 0b00;
+    reg_0.low_symbol_1 = 0b00;
+    reg_0.high_symbol_0 = 0b10;
+    reg_0.high_symbol_1 = 0b10;
+
+    // For Phillips I2S, the LRCLK is toggled 1 BCLK before.
+    // So essentially, we need to shift the carrier output with reference to the 16 bit audio word.
+    // This can be achieved by changing the program_start_index to start at 0 instead of 255.
+    //
+    // Once the program counter reaches 0, it loops back to 255 and counts down to 0. Then it loops back to 255 and so on...
+    pulse_transmitter_write_reg_1_t reg_1 = {0};
+    reg_1.program_start_index = 0;
+    reg_1.program_loopback_index = 255;
+    reg_1.program_end_index = 0;
+    reg_1.program_loop_count = 1;
+
+    // For a 32kHz sample rate, with 16 bits per left or right channel,
+    // the desired BCLK is 32000 * 32 = 1.024 MHz.
+    //
+    // So our main clock frequency should be 1.024 MHz * 2 * n
+    // 
+    // Example, when n = 11, we get 22.528 MHz
+    // Example, when n = 31, we get 63.488 MHz
+    //
+    // In general, try to aim for a higher main clock frequency, so that more computations can be done.
+
+    // For 22.528 MHz main clock frequency,
+    // The maximum CPU utilization was tested on a FPGA to be about 35%
+    uint16_t n = 11; 
+
+    // For 63.488 MHz main clock frequency
+    // uint16_t n = 31;
+
+    pulse_transmitter_write_reg_2_t reg_2 = {0};
+    reg_2.main_low_duration_a = n - 2;
+    reg_2.main_high_duration_a = n - 2;
+
+
+    pulse_transmitter_write_reg_4_t reg_4 = {0};
+    reg_4.carrier_duration = n * 2 * 16 - 1; // Make sure the value does not exceed the maximum range of carrier_duration
+
+    pulse_transmitter_write8_reg_0_t reg8_0 = {0};
+    reg8_0.start_program = 1;
+
+    *(volatile uint32_t *)(PULSE_TRANSMITTER_ADDRESS) = reg_0.val;
+    *(volatile uint32_t *)(PULSE_TRANSMITTER_ADDRESS + 4) = reg_1.val;
+    *(volatile uint32_t *)(PULSE_TRANSMITTER_ADDRESS + 8) = reg_2.val;
+    *(volatile uint32_t *)(PULSE_TRANSMITTER_ADDRESS + 16) = reg_4.val;   
+
+    // Fill with zeroes first
+    for(int i=0; i<32; i+=4) {
+        *(volatile uint32_t *)(PULSE_TRANSMITTER_ADDRESS + 32 + i) = 0;
+    }
+
+    // Kickstart the program
+    *(volatile uint8_t *)(PULSE_TRANSMITTER_ADDRESS) = reg8_0.val;
+    
+    process();
+
+}
+
+static inline uint32_t calculate_sample(uint8_t osc_enabled, uint32_t accm_a, uint32_t accm_b) {
+    int16_t s = 0;
+
+    if (osc_enabled & 0b00000001) {
+        // Sawtooth: upper 16 bits = waveform
+        s += ((int16_t)(accm_a >> 16)) >> (1 + VOLUME_REDUCTION);
+    }
+
+    if (osc_enabled & 0b00000010) {
+        s += ((int16_t)(accm_b >> 16)) >> (1 + VOLUME_REDUCTION);
+    }
+
+    // Using multiply reduces branching, but then the calculation will always be done for both
+    //s += mul32x16((((int16_t)(accm_a >> 16)) >> (1 + VOLUME_REDUCTION)), osc_enabled & 0b00000001);
+    //s += mul32x16(((int16_t)(accm_b >> 16)) >> (1 + VOLUME_REDUCTION), osc_enabled & 0b00000010);
+
+    return ((uint32_t)(uint16_t)s << 16) | (uint16_t)s;
+}
+
+inline static void fast_sw(uint32_t val, const uint32_t offset) {
+    asm volatile (
+        "sw %[val], %[offset](tp)"
+        :
+        : [val] "r" (val), [offset] "i" (offset)
+    );
+}
+
+inline static uint32_t fast_lw(const uint32_t offset) {
+    uint32_t val;
+
+    asm volatile (
+        "lw %[val], %[offset](tp)"
+        : [val] "=r" (val)
+        : [offset] "i" (offset)
+    );
+
+    return val;
+}
+
+#define PULSE_TRANSMITTER_OFFSET 704
+
+void process() {
+    while (true) {
+        // I used some assembly to make stores to/ load from peripheral faster, by taking advantage of the fact that in tinyQV the register 'tp' is hardcoded to 0x8000000.
+        // So instead of loading a immediate, then storing/loading, we can just store/load directly.
+        // As a bonus, this saves 1 register for other things.
+
+        // For example, we want to store to PULSE_TRANSMITTER_ADDRESS + 32 + 12,
+        // this is actually 0x80002C0, the 0x2C0 part is 704 in decimal. So we want 704 + 32 + 12 = 748
+
+        // Ideas for further optimization, in tinyQV, load/store to RAM (aka PSRAM) takes a large number of cycles which is not great.
+        // Feel free to further optimize this looking into multi-word load/stores, or by using other peripheral as a faster memory.
+        
+        // Nudging the compiler to load from memory to a register instead of loading from PSRAM every time.
+        uint32_t temp_accm_a = accm_a;
+        uint32_t temp_accm_b = accm_b;
+        uint8_t temp_osc_enabled = osc_enabled;
+
+        // Check the program counter
+        pulse_transmitter_read_reg_t read;
+        read.val = fast_lw(PULSE_TRANSMITTER_OFFSET);
+        while (read.program_counter <= 127) {
+            read.val = fast_lw(PULSE_TRANSMITTER_OFFSET);
+        }
+
+        // The program counter should now be close to 255, so we fill the lower bits 0 to 127.
+        gpio_on(2);
+        temp_accm_a += PHASE_STEP(FREQ_A);
+        temp_accm_b += PHASE_STEP(FREQ_B);
+
+        fast_sw(calculate_sample(temp_osc_enabled, temp_accm_a, temp_accm_b), PULSE_TRANSMITTER_OFFSET + 32 + 12);
+
+        temp_accm_a += PHASE_STEP(FREQ_A);
+        temp_accm_b += PHASE_STEP(FREQ_B);
+
+        fast_sw(calculate_sample(temp_osc_enabled, temp_accm_a, temp_accm_b), PULSE_TRANSMITTER_OFFSET + 32 + 8);
+
+        temp_accm_a += PHASE_STEP(FREQ_A);
+        temp_accm_b += PHASE_STEP(FREQ_B);
+
+        fast_sw(calculate_sample(temp_osc_enabled, temp_accm_a, temp_accm_b), PULSE_TRANSMITTER_OFFSET + 32 + 4);
+
+        temp_accm_a += PHASE_STEP(FREQ_A);
+        temp_accm_b += PHASE_STEP(FREQ_B);
+
+        fast_sw(calculate_sample(temp_osc_enabled, temp_accm_a, temp_accm_b), PULSE_TRANSMITTER_OFFSET + 32);
+        gpio_off(2);
+
+        // Check the program counter
+        pulse_transmitter_read_reg_t read2;
+        read2.val = fast_lw(PULSE_TRANSMITTER_OFFSET);
+        while (read2.program_counter > 127) {
+            read2.val = fast_lw(PULSE_TRANSMITTER_OFFSET);
+        }
+
+        // The program counter should now be close to 127, so we fill the upper bits 128 to 255.
+        gpio_on(2);
+        temp_accm_a += PHASE_STEP(FREQ_A);
+        temp_accm_b += PHASE_STEP(FREQ_B);
+
+        fast_sw(calculate_sample(temp_osc_enabled, temp_accm_a, temp_accm_b), PULSE_TRANSMITTER_OFFSET + 32 + 28);
+
+        temp_accm_a += PHASE_STEP(FREQ_A);
+        temp_accm_b += PHASE_STEP(FREQ_B);
+
+        fast_sw(calculate_sample(temp_osc_enabled, temp_accm_a, temp_accm_b), PULSE_TRANSMITTER_OFFSET + 32 + 24);
+
+        temp_accm_a += PHASE_STEP(FREQ_A);
+        temp_accm_b += PHASE_STEP(FREQ_B);
+
+        fast_sw(calculate_sample(temp_osc_enabled, temp_accm_a, temp_accm_b), PULSE_TRANSMITTER_OFFSET + 32 + 20);
+
+        temp_accm_a += PHASE_STEP(FREQ_A);
+        temp_accm_b += PHASE_STEP(FREQ_B);
+
+        fast_sw(calculate_sample(temp_osc_enabled, temp_accm_a, temp_accm_b), PULSE_TRANSMITTER_OFFSET + 32 + 16);
+        gpio_off(2);
+        
+        accm_a = temp_accm_a;
+        accm_b = temp_accm_b;
+
+        // Lets also update some stuff which do not needed to be updated every sample (to save some compute)
+        uint32_t microseconds = read_time();
+
+        // 1 second = 1000000 microseconds which is close to 2^20
+        osc_enabled = (microseconds >> 20) & 0b11;
+    }
+}
+```
+
 ## External hardware
 For testing with an IR LED, the output pins cannot deliver much current, so use a buffer or transistor to drive the LED.
