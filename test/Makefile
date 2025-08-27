@@ -29,7 +29,7 @@ USER_PERIPHERALS_B = \
 	ubcd.test \
 	analog_toolkit.test \
 	intercal_alu.test \
-  affinex.test \
+	affinex.test \
 
 .PHONY: all core prog peri $(USER_PERIPHERALS) $(USER_PERIPHERALS_B)
 
