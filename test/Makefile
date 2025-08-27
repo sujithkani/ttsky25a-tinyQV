@@ -29,6 +29,7 @@ USER_PERIPHERALS_B = \
 	ubcd.test \
 	analog_toolkit.test \
 	intercal_alu.test \
+	affinex.test \
 	CORDIC.test_trigonometric_simple CORDIC.test_linear_simple CORDIC.test_hyperbolic_vectoring_square_vis CORDIC.test_hyperbolic_vectoring_simple \
 	CORDIC.test_hyperbolic_rotating_sweep_and_vis CORDIC.test_hyperbolic_rotating_simple CORDIC.test_circular_rotating_sweep_and_vis
 

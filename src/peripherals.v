@@ -802,7 +802,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
                                      .user_interrupt(cordic_interrupt));
 
 
-    tqvp_full_example_no_irq i_user_peri39 (
+    tqvp_affinex i_user_peri39 (
         .clk(clk),
         .rst_n(rst_n),
 
