@@ -27,7 +27,7 @@ module vga_timing_cc (
 `define V_FPORCH (16 * 64)
 `define V_SYNC   (16 * 64 + 3)
 `define V_BPORCH (16 * 64 + 7)
-`define V_NEXT   (16 * 64 + 29)
+`define V_NEXT   (16 * 64 + 29)  // (16 * 64 + 35) more robust alternative?
 
 always @(posedge clk) begin
     if (!rst_n) begin
@@ -51,7 +51,6 @@ always @(posedge clk) begin
             if({y_hi, y_lo} == `V_NEXT) begin
                 y_hi <= 0;
                 y_lo <= 0;
-                //interrupt <= 1;
             end else if (y_lo == `V_ROLL) begin
                 y_hi <= y_hi + 1;
                 y_lo <= 0;
