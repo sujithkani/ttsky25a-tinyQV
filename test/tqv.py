@@ -57,7 +57,7 @@ class TinyQV:
     async def read_reg(self, reg):
         await test_util.stop_nops()
         await test_util.send_instr(self.dut, InstructionLBU(a1, tp, self.base_address + reg).encode())
-        val = await test_util.read_reg(self.dut, a1)
+        val = await test_util.read_reg(self.dut, a1, True)
         await test_util.start_nops(self.dut)
         return val
 
@@ -102,7 +102,7 @@ class TinyQV:
     async def read_hword_reg(self, reg):
         await test_util.stop_nops()
         await test_util.send_instr(self.dut, InstructionLHU(a1, tp, self.base_address + reg).encode())
-        val = await test_util.read_reg(self.dut, a1)
+        val = await test_util.read_reg(self.dut, a1, True)
         await test_util.start_nops(self.dut)
         return val
 
@@ -135,7 +135,7 @@ class TinyQV:
     async def read_word_reg(self, reg):
         await test_util.stop_nops()
         await test_util.send_instr(self.dut, InstructionLW(a1, tp, self.base_address + reg).encode())
-        val = await test_util.read_reg(self.dut, a1)
+        val = await test_util.read_reg(self.dut, a1, True)
         await test_util.start_nops(self.dut)
         return val
 

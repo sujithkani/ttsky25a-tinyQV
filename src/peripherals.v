@@ -208,7 +208,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
     // --------------------------------------------------------------------- //
     // Full interface peripherals
 
-    tqvp_full_empty i_user_peri04(
+    tqvp_sohaib_npu i_user_peri04(
         .clk(clk),
         .rst_n(rst_n),
 
@@ -436,7 +436,6 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .user_interrupt(user_interrupts[15])
     );
 
-
     // --------------------------------------------------------------------- //
     // Byte interface peripherals
 
@@ -634,7 +633,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .data_out(data_from_simple_peri[12])
     );
 
-    tqvp_byte_example i_user_simple013 (
+    tqvp_alonso_rsa i_tqvp_alonso_rsa_user_simple013 (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -767,7 +766,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .data_ready(data_ready_from_user_peri[20])
     );
 
-    tqvp_full_example_no_irq i_user_peri37 (
+    tqvp_rebeccargb_intercal_alu  i_user_peri37 (
         .clk(clk),
         .rst_n(rst_n),
 
@@ -784,24 +783,26 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .data_ready(data_ready_from_user_peri[21])
     );
 
-    tqvp_full_example_no_irq i_user_peri38 (
-        .clk(clk),
-        .rst_n(rst_n),
+    reg cordic_interrupt;
+    tqvp_CORDIC i_user_peri38       (.clk(clk),
+                                     .rst_n(rst_n),
 
-        .ui_in(ui_in),
-        .uo_out(uo_out_from_user_peri[22]),
+                                     .ui_in(ui_in),
+                                     .uo_out(uo_out_from_user_peri[22]),
 
-        .address(addr_in[5:0]),
-        .data_in(data_in),
+                                     .address(addr_in[5:0]),
+                                     .data_in(data_in),
 
-        .data_write_n(data_write_n    | {2{~peri_user[22]}}),
-        .data_read_n(data_read_n_peri | {2{~peri_user[22]}}),
+                                     .data_write_n(data_write_n    | {2{~peri_user[22]}}),
+                                     .data_read_n(data_read_n_peri | {2{~peri_user[22]}}),
 
-        .data_out(data_from_user_peri[22]),
-        .data_ready(data_ready_from_user_peri[22])
-    );
+                                     .data_out(data_from_user_peri[22]),
+                                     .data_ready(data_ready_from_user_peri[22]),
 
-    tqvp_full_example_no_irq i_user_peri39 (
+                                     .user_interrupt(cordic_interrupt));
+
+
+    tqvp_affinex i_user_peri39 (
         .clk(clk),
         .rst_n(rst_n),
 
