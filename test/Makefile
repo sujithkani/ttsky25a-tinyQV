@@ -28,6 +28,7 @@ USER_PERIPHERALS_B = \
 	pdm.test \
 	ubcd.test \
 	analog_toolkit.test \
+	rsa.test \
 	intercal_alu.test \
 	affinex.test \
 	npu.test \
