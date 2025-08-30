@@ -23,7 +23,7 @@ set_output_delay -clock [get_clocks $::env(CLOCK_PORT)] -max $output_setup_delay
 set_output_delay -clock [get_clocks $::env(CLOCK_PORT)] -min $output_hold_delay_value {uio_out uio_oe}
 
 # Lower delay on SPI clock output because it can be driven at negedge for timing tweaking
-set spi_clk_setup_delay_value [expr $::env(CLOCK_PERIOD) * 0.2]
+set spi_clk_setup_delay_value [expr $::env(CLOCK_PERIOD) * 0.18]
 set_output_delay -clock [get_clocks $::env(CLOCK_PORT)] -max $spi_clk_setup_delay_value {uio_out[3]}
 
 # Delays on user outputs
