@@ -7,7 +7,7 @@ from cocotb.triggers import ClockCycles
 
 from tqv import TinyQV
 
-PERIPHERAL_NUM = 31
+PERIPHERAL_NUM = 16
 
 async def setup_test(dut):
     """Common setup for all tests"""
