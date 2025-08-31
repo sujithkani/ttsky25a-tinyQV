@@ -195,7 +195,7 @@ module mkTinyTone_Peripheral(CLK,
   assign RDY_user_interrupt = 1'd1 ;
 
   // value method uo_out
-  assign uo_out = toneGen_pwm ? 8'd1 : 8'd0 ;
+  assign uo_out = {8{toneGen_pwm}};
   assign RDY_uo_out = 1'd1 ;
 
   // rule RL_toneGen_count
