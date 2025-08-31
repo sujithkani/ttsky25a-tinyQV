@@ -111,7 +111,7 @@ def tiled(x, *tile_shape):
 def dtype_to_bounds(width, signed): return (-1 << width - 1, (1 << width - 1) - 1) if signed else (0, (1 << width) - 1)
 
 def qfc(input, weight, bias, output_zp, qmul, shamt, relu=True, width=4, signed=True):
-    out = input.astype(np.int32) @ weight + bias
+    out = input.astype(np.int16) @ weight.astype(np.int16) + bias.astype(np.int16)
     out = np.maximum(out, 0) if relu else out
     out = (qmul.astype(np.int32) * out >> shamt) + output_zp
     return np.clip(out, *dtype_to_bounds(width, signed)).astype(np.int8)

@@ -45,10 +45,10 @@ async def test_project(dut):
 
     for _ in range(10):
         relu, output_zp, shamts = bool(random.getrandbits(1)), random.randint(-8, 7), np.random.randint(0, 31, size=(NCOLS,))
-        bias = np.random.randint(*dtype_to_bounds(ACC_WIDTH, True), size=(NCOLS,))
-        qmuls = np.random.randint(10000, (1 << ACC_WIDTH - 1) - 1, size=(NCOLS,))
-        w = np.random.randint(*dtype_to_bounds(4, True), size=(NROWS, NCOLS))
-        a = np.random.randint(*dtype_to_bounds(4, True), size=(1, NROWS))
+        bias = np.random.randint(*dtype_to_bounds(ACC_WIDTH, True), size=(NCOLS,), dtype=np.int16)
+        qmuls = np.random.randint(0, (1 << ACC_WIDTH - 1) - 1, size=(NCOLS,), dtype=np.int16)
+        w = np.random.randint(*dtype_to_bounds(4, True), size=(NROWS, NCOLS), dtype=np.int8)
+        a = np.random.randint(*dtype_to_bounds(4, True), size=(1, NROWS), dtype=np.int8)
         expected = qfc(a, w, bias, output_zp, qmuls, shamts, relu=relu, width=4, signed=True)
         np.testing.assert_array_equal(await tb_qfc(tqv, a, w, bias, output_zp, qmuls, shamts,
             nrows=NROWS, ncols=NCOLS, acc_width=ACC_WIDTH, relu=relu, progress=False), expected)
