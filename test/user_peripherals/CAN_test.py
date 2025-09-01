@@ -2,6 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import cocotb
+
+PERIPHERAL_NUM = 7
+
 from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
 
