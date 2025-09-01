@@ -33,6 +33,7 @@ project:
     - "user_peripherals/uart/uart_tx.v"
     - "user_peripherals/spi.v"
     - "user_peripherals/game_pmod.v"
+    - "user_peripherals/tt_um_tqv_jesari_CAN.v"
     - "user_peripherals/encoder/debounce.v"
     - "user_peripherals/encoder/encoder.v"
     - "user_peripherals/encoder/matt_encoder.v"
