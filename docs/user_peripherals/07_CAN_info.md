@@ -6,6 +6,10 @@ sections.
 You can also include images in this folder and reference them in the markdown. Each image must be less than
 512 kb in size, and the combined size of all images must be less than 1 MB.
 -->
+## Simplified CAN bus Controller
+
+Author: Jesus Arias
+Peripheral index: 7 
 
 ## What it does
 
