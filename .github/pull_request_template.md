@@ -1,8 +1,8 @@
-Thank you for entering the TinyQV Risc-V Peripheral Challenge!
+*** This instance of TinyQV is full ***
 
-All designs must have passing CI actions in a repo created from one of the templates before a submission will be accepted.
+If you are submitting an update to an existing peripheral, continue here.
 
-Please review the submission checklist and process in the template repo before submitting the PR.
+If you want to submit a new peripheral, instead make a pull request against the second instance: https://github.com/TinyTapeout/ttsky25a-tinyQVb
 
 You can delete the rest of this text, but please leave a link to your repo below.
 

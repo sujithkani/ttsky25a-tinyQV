@@ -4,7 +4,9 @@
 
 ![Risc-V competition logo](docs/riscv_compo.jpg)
 
-TinyQV is accepting peripherals for tape out on the Tiny Tapeout [ttsky25a shuttle](https://app.tinytapeout.com/shuttles/ttsky25a) as part of the [Tiny Tapeout Risc-V peripheral challenge](https://tinytapeout.com/competitions/risc-v-peripheral/).
+This instance of TinyQV is now full!  New peripherals should be submitted to the [second instance](https://github.com/TinyTapeout/ttsky25a-tinyQVb).
+
+TinyQV will be taped out on the Tiny Tapeout [ttsky25a shuttle](https://app.tinytapeout.com/shuttles/ttsky25a) as part of the [Tiny Tapeout Risc-V peripheral challenge](https://tinytapeout.com/competitions/risc-v-peripheral/).
 
 To contribute, start from either:
 - The [byte peripheral template](https://github.com/TinyTapeout/tinyqv-byte-peripheral-template) for simpler peripherals, or
