@@ -11,7 +11,7 @@ USER_PERIPHERAL_11 = pulse_transmitter.test
 USER_PERIPHERAL_12 =
 USER_PERIPHERAL_13 = vgaconsole.test
 USER_PERIPHERAL_14 =
-USER_PERIPHERAL_15 =
+USER_PERIPHERAL_15 = tiny-tone.mkTinyTone_Peripheral
 USER_PERIPHERAL_16 = matt_encoder.test
 USER_PERIPHERAL_17 = edge_counter
 USER_PERIPHERAL_18 = ledstrip.test
@@ -78,4 +78,3 @@ prog: clean prog-results.xml
 .SECONDEXPANSION:
 peri_num_%: clean $$(call expand_tests,%)
 	@if [ "$(USER_PERIPHERAL_$*)" != "" ]; then cat peri-*.xml; else echo '<testsuites name="results" />'; fi > results.xml
-
