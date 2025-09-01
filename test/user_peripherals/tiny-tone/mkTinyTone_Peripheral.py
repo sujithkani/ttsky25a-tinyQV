@@ -6,7 +6,7 @@ from cocotb.clock import Clock
 from cocotb.triggers import ClockCycles
 from tqv import TinyQV
 
-PERIPHERAL_NUM = 0
+PERIPHERAL_NUM = 15
 
 @cocotb.test()
 async def test_project(dut):
