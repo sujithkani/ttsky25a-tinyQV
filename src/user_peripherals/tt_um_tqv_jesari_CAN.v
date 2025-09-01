@@ -58,8 +58,8 @@ module tt_um_tqv_jesari_CAN (
     // data_read_n is unused as none of our behaviour depends on whether
     // registers are being read.
     wire _unused = &{ui_in[0], ui_in[7:2], address[5:4], address[1:0], 1'b0};
-    // assign uo_out[7:2]=6'bzzzzzz;
-    // assign uo_out[0]=1'bz;
+	assign uo_out[7:2]=6'bxxxxxx;
+	assign uo_out[0]=1'bx;
 
 endmodule
 
