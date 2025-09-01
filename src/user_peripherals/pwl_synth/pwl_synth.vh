@@ -9,8 +9,12 @@
 `endif
 
 `define USE_PHASE_LATCHES
+`define USE_P_LATCHES_ONLY
+`define USE_LSB_DELAY_REGS
 `define USE_OCT_COUNTER_LATCHES
+`define USE_OCT_COUNTER_READ // requires USE_OCT_COUNTER_LATCHES and USE_NEW_READ to work
 `define USE_NEW_READ
+`define USE_OUTPUT_BUFFERS
 
 `define USE_SLOPE_EXP_REGS
 `define USE_PARAMS_REGS
@@ -22,9 +26,14 @@
 `define USE_PWL_OSC
 `define USE_ORION_WAVE
 `define USE_ORION_MASK
+`define USE_ORION_WAVE_PWM
 `define USE_STEREO
+`define USE_STEREO_POS
+`define USE_OSC_SYNC // currently only implemented to work with USE_P_LATCHES_ONLY, need write back condition (override oct_enable) for next step otherwise
+`define USE_4_BIT_MODE // only works together with USE_OSC_SYNC
+`define USE_OSC_SYNC_ONLY_FOR_SOME_CHANNELS
 
-//`define USE_MORE_REG_RESETS
+`define USE_MORE_REG_RESETS
 
 
 `ifdef USE_STEREO
@@ -43,7 +52,7 @@
 
 `ifdef USE_NEW_REGMAP
 //	`define CHANNEL_MODE_BITS 4
-	`define CHANNEL_MODE_BITS 9
+	`define CHANNEL_MODE_BITS 11
 	`ifdef USE_NEW_REGMAP_B
 		`define REGS_PER_CHANNEL 8
 		`define REG_BITS 13 // Could be 13? If the registers don't grow too much
@@ -68,8 +77,9 @@
 	`define REG_ADDR_BITS 5
 `endif
 
-
 `define CFG_BIT_STEREO_EN 0
+`define CFG_BIT_STEREO_POS_EN 1
+`define CFG_BITS 2
 
 
 // 0-2: detune_exp
@@ -80,6 +90,10 @@
 `define CHANNEL_MODE_BIT_X2N1 6
 `define CHANNEL_MODE_BIT_COMMON_SAT 7
 `define CHANNEL_MODE_BIT_PWL_OSC 8
+`define CHANNEL_MODE_BIT_OSC_SYNC_EN 9
+`define CHANNEL_MODE_BIT_OSC_SYNC_SOFT 10
+
+`define CHANNEL_MODE_FLAGS_OSC_SYNC_MASK ((1<<`CHANNEL_MODE_BIT_OSC_SYNC_EN)|(1<<`CHANNEL_MODE_BIT_OSC_SYNC_SOFT))
 
 
 `define WF_BITS 2
@@ -183,6 +197,7 @@
 `define TST_ADDR_LFSR_EXTRA_BITS 4
 `define TST_ADDR_OCT_COUNTER 5
 `define TST_ADDR_OUT_ACC_ALT_FRAC 6
+`define TST_ADDR_LAST_OSC_WRAPPED 7
 
 
 
@@ -200,7 +215,6 @@
 
 `define PIPELINE_CURR_CHANNEL
 
-`define USE_P_LATCHES_ONLY
 
 `ifndef PURE_RTL
 //`define NAMED_BUF_EN
@@ -209,17 +223,31 @@
 `endif
 
 
-// Define SCL_sky130_fd_sc_hd if not pure RTL and not IHP. Shouldn't be needed, but seems to be needed for my local runs at least.
 `ifndef PURE_RTL
+/*
 `ifndef SCL_sg13g2_stdcell
+// Define SCL_sky130_fd_sc_hd if not pure RTL and not IHP. Shouldn't be needed, but seems to be needed for my local runs at least.
 `define SCL_sky130_fd_sc_hd
 `endif
+*/
+`ifdef USE_LSB_DELAY_REGS
+`define USE_ACTUAL_LSB_DELAY_REGS
 `endif
+`endif
+
+
+// Need at least 4, since data_in[3:0] becomes invalid after one cycle, when the P latch reds it. Could use 4, 8, or 16.
+`define NUM_VOLATILE_LSBS 4
 
 
 `ifdef USE_P_LATCHES_ONLY
-// Need at least 4, since data_in[3:0] becomes invalid after one cycle, when the P latch reds it. Could use 4, 8, or 16.
-`define INTERFACE_REGISTER_SHIFT 4
+`ifndef USE_LSB_DELAY_REGS
+`define USE_INTERFACE_REGISTER_SHIFT
+`endif
+`endif
+
+`ifdef USE_INTERFACE_REGISTER_SHIFT
+`define INTERFACE_REGISTER_SHIFT `NUM_VOLATILE_LSBS
 `else
 `define INTERFACE_REGISTER_SHIFT 0
 `endif
