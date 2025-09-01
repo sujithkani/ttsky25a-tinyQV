@@ -9,7 +9,7 @@ You can also include images in this folder and reference them in the markdown. E
 
 ## What it does
 
-This peripheral is a simplified CAN bus controller. A more detailed descriprion is included in the [PDF file](CANPerif.pdf)
+This peripheral is a simplified CAN bus controller. A more detailed descriprion is included in the [PDF file](07_CANPerif.pdf)
 
 ## Register map
 
