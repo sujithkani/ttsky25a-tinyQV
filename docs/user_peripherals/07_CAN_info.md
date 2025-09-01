@@ -9,6 +9,7 @@ You can also include images in this folder and reference them in the markdown. E
 ## Simplified CAN bus Controller
 
 Author: Jesus Arias
+
 Peripheral index: 7 
 
 ## What it does
