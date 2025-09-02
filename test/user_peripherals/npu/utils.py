@@ -154,17 +154,17 @@ async def tb_qfc(tqv, input, weight, bias, output_zp, qmul, shamt,
     tiled_inp = tiled(input, acc_depth, nrows)
     pbar = tqdm(total=m * n, desc=f"fully connected {k, n}, B={m}", display=progress)
 
-    await tqv.write_word_reg(0x10, (output_zp & 0xF) << 1 | relu)
+    await tqv.write_byte_reg(0x10, (output_zp & 0xF) << 1 | relu)
 
     result = []
     for nn in range(tiled_w.shape[1]):
         # write quantized multipliers and shift amounts
-        await tqv.write_word_reg(0x04, packed(shamt[nn * ncols: (nn + 1) * ncols].tolist(), shamt_width))
-        await tqv.write_word_reg(0x08, packed(qmul[nn * ncols: (nn + 1) * ncols].tolist(), acc_width - 1))
+        await tqv.write_byte_reg(0x04, packed(shamt[nn * ncols: (nn + 1) * ncols].tolist(), shamt_width))
+        await tqv.write_hword_reg(0x08, packed(qmul[nn * ncols: (nn + 1) * ncols].tolist(), acc_width - 1))
 
         for mm in range(tiled_inp.shape[0]):
             # reset accumulator with bias
-            await tqv.write_word_reg(0x02, packed(bias[nn * ncols:(nn + 1) * ncols].tolist(), acc_width))
+            await tqv.write_hword_reg(0x02, packed(bias[nn * ncols:(nn + 1) * ncols].tolist(), acc_width))
 
             for kk in range(tiled_inp.shape[1]):
                 # send weights and inputs
@@ -173,7 +173,7 @@ async def tb_qfc(tqv, input, weight, bias, output_zp, qmul, shamt,
                 await tqv.write_word_reg(0x01, packed_weights << nrows * width | packed_inputs)
 
             # read scaled accs
-            result.append(as_signed(unpacked(await tqv.read_word_reg(0x02), width * ncols, width), width))
+            result.append(as_signed(unpacked(await tqv.read_byte_reg(0x02), width * ncols, width), width))
             pbar.update(acc_depth * ncols)
     pbar.update(close=True)
     return np.array(result, dtype=np.int8).reshape(-1, m, ncols).transpose(1, 0, 2).reshape(m, n)

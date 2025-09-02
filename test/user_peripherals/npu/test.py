@@ -43,6 +43,12 @@ async def test_project(dut):
 
     dut._log.info("Test project behavior")
 
+    # test reading unscaled 16bits acc reg
+    rv = random.randint(*dtype_to_bounds(ACC_WIDTH, True))
+    await tqv.write_hword_reg(0x02, rv & (1 << ACC_WIDTH) - 1)
+    assert as_signed([await tqv.read_hword_reg(0x02)], ACC_WIDTH)[0] == rv
+
+    # quantized fully connected
     for _ in range(10):
         relu, output_zp, shamts = bool(random.getrandbits(1)), random.randint(-8, 7), np.random.randint(0, 31, size=(NCOLS,))
         bias = np.random.randint(*dtype_to_bounds(ACC_WIDTH, True), size=(NCOLS,), dtype=np.int16)
