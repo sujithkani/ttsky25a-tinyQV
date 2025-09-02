@@ -559,8 +559,8 @@ module pwls_state_decoder #(parameter SHIFT_COUNT_BITS=4, DETUNE_EXP_BITS=3, SLO
 		dest_we_only_if_oct_en = 0;
 		reg_we_if_oct_en = 0;
 		rmw_continued = 0;
-		pred_sel = `PRED_SEL_OSC;
-		part_sel = `PART_SEL_SRC2_PRE_SIGN;
+		pred_sel = 'X; // Must always set when pred_we is set
+		part_sel = 'X; // Must always set when part_we is set
 		last_osc_wrapped_we = 0;
 		reg_we_only_if_part = 0;
 		reg_we_always = 0;
@@ -715,7 +715,7 @@ module pwls_state_decoder #(parameter SHIFT_COUNT_BITS=4, DETUNE_EXP_BITS=3, SLO
 `endif
 `ifdef USE_P_LATCHES_ONLY
 					// Write back new `oct_counter[23:12]`
-					reg_we_always = 1; // Based on that state == 6 will trigger and state == 0 will not. TODO: Update if state encoding changes
+					reg_we_always = 1;
 `else
 					// Write back new `oct_counter[11:0]`
 					reg_we_always = 1;
@@ -872,7 +872,7 @@ module pwls_state_decoder #(parameter SHIFT_COUNT_BITS=4, DETUNE_EXP_BITS=3, SLO
 				sat_en = 1;
 				inv_src1 = 0; inv_src2 = acc_sign; carry_in = 0;
 				src2_lshift = 0;
-				part_we = main_en;
+				part_we = main_en; part_sel = `PART_SEL_SRC2_PRE_SIGN;
 				dest_sel = `DEST_SEL_ACC;
 
 `ifdef USE_X2N_FLAGS
@@ -894,8 +894,7 @@ module pwls_state_decoder #(parameter SHIFT_COUNT_BITS=4, DETUNE_EXP_BITS=3, SLO
 `endif
 					sat_en = 0;
 					inv_src2 = 0;
-					part_we = main_en;
-					part_sel = `PART_SEL_ZERO;
+					part_we = main_en; part_sel = `PART_SEL_ZERO;
 				end
 `endif
 			end
@@ -1517,12 +1516,12 @@ module pwls_ALU_unit #(parameter BITS=12, BITS_E=13, NUM_CHANNELS=4, SHIFT_COUNT
 	assign bitshuffle_acc[12] = 0;
 `else
 	wire [BITS_E-1:0] bitshuffle_acc;
-	assign bitshuffle_acc[ 0] = acc[11]; // mask for original Orion Wave
+	assign bitshuffle_acc[ 0] = 0; //acc[ 3]; // mask for original Orion Wave
 	assign bitshuffle_acc[ 1] = acc[ 4];
-	assign bitshuffle_acc[ 2] = acc[10]; // mask for original Orion Wave
+	assign bitshuffle_acc[ 2] = 0; // acc[ 5]; // mask for original Orion Wave
 	assign bitshuffle_acc[ 3] = acc[ 7];
 	assign bitshuffle_acc[ 4] = acc[ 8];
-	assign bitshuffle_acc[ 5] = acc[ 9]; // mask for original Orion Wave
+	assign bitshuffle_acc[ 5] = acc[ 6]; // mask for original Orion Wave
 	assign bitshuffle_acc[ 6] = acc[10];
 	assign bitshuffle_acc[ 7] = acc[11]; // mask for original Orion Wave
 	assign bitshuffle_acc[ 8] = acc[ 8]; // mask for original Orion Wave
