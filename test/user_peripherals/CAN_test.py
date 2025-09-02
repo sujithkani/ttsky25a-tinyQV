@@ -23,8 +23,10 @@ async def test_project(dut):
     # with TinyQV - the implementation of this class will be replaces with a
     # different version that uses Risc-V instructions instead of the SPI 
     # interface to read and write the registers.
-    tqv = TinyQV(dut)
-
+    # tqv = TinyQV(dut)
+    
+    tqv = TinyQV(dut, PERIPHERAL_NUM)
+    
     # Reset
     await tqv.reset()
 
