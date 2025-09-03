@@ -78,11 +78,15 @@ If MTIME is after MTIMECMP (by less than 2^30 microseconds to deal with wrap), t
 
 | Audio function select | Peripheral |
 | --------------------- | ---------- |
-| 0-3                   | PSRAM B enabled |
-| 4                     | 33 PWL Synth out 7 |
-| 5                     | 11 Pulse Transmitter out 7 |
-| 6                     | 20 PWM out 0 |
-| 7                     | 21 Matt PWM out 1 |
+| 0-7                   | PSRAM B enabled |
+| 8                     | 33 PWL Synth out 7 |
+| 9                     | 11 Pulse Transmitter out 7 |
+| 10                    | 20 PWM out 0 |
+| 11                    | 21 Matt PWM out 7 |
+| 12                    | 08 Prism out 7 |
+| 13                    | 11 Analog toolkit out 7 |
+| 14                    | 20 PWL Synth out 6 |
+| 15                    | 21 Matt PWM out 7 |
 
 ### UART
 
