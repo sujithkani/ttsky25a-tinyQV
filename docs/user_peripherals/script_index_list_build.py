@@ -11,7 +11,22 @@ BRANCH   = "main"
 REL_PATH = "docs/user_peripherals"
 
 H1_RE = re.compile(r"^\s*#\s+(.+?)\s*$", re.MULTILINE)
-AUTHOR_LINE_RE = re.compile(r"^\s*(?:Author|Authors?)\s*:\s*(.+?)\s*$", re.IGNORECASE)
+AUTHOR_LINE_RE = re.compile(
+    r"""^\s*
+        (?:[-+*]\s*)?          # optional bullet
+        (?:>\s*)?              # optional blockquote
+        [*_]*                  # optional emphasis before key
+        (?:Author|Authors?)    # key
+        [*_]*                  # optional emphasis after key
+        \s*
+        [*_]*[:：][*_]*        # colon (ASCII or full-width) with optional emphasis
+        \s*
+        (.+?)\s*$              # value
+    """,
+    re.IGNORECASE | re.VERBOSE
+)
+
+
 
 def strip_html_comments(md: str) -> str:
     return re.sub(r"<!--.*?-->", "", md, flags=re.DOTALL)
@@ -75,6 +90,7 @@ def main():
             num = it["number"] if it["number"] is not None else ""
             name = it["name"] or ""
             author = it["author"] or ""
+            print(f"found peripheral {num} {name}, by {author}")
             # full GitHub link
             url = f"{REPO_URL}/blob/{BRANCH}/{REL_PATH}/{it['file']}"
             f.write(f"| {num} | {name} | {author} | {it['type']} | [{it['file']}]({url}) |\n")
