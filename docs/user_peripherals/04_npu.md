@@ -10,7 +10,7 @@ This peripheral implements a processing unit for running 4bit quantized models t
 of google's litert (see https://ai.google.dev/edge/litert/models/quantization_spec or https://arxiv.org/abs/1712.05877).
 
 The peripheral contains four int4 MACs in chain, an int16 accumulation register and a scaler unit
-for scaling the int16 accumulation back to int4 by performing a saturating mulh between uint15 and int16 (5bits at a time for a latency of 4cycles).
+for scaling the int16 accumulation back to int4 by performing a saturating mulh between uint15 and int16 (3bits at a time for a latency of 6cycles).
 ![NPU Diagram](04_npu_diagram.svg)
 
 

@@ -43,6 +43,12 @@ async def test_project(dut):
 
     dut._log.info("Test project behavior")
 
+    # test reading unscaled 16bits acc reg
+    rv = random.randint(*dtype_to_bounds(ACC_WIDTH, True))
+    await tqv.write_hword_reg(0x02, rv & (1 << ACC_WIDTH) - 1)
+    assert as_signed([await tqv.read_hword_reg(0x02)], ACC_WIDTH)[0] == rv
+
+    # quantized fully connected
     for _ in range(10):
         relu, output_zp, shamts = bool(random.getrandbits(1)), random.randint(-8, 7), np.random.randint(0, 31, size=(NCOLS,))
         bias = np.random.randint(*dtype_to_bounds(ACC_WIDTH, True), size=(NCOLS,), dtype=np.int16)
@@ -86,9 +92,11 @@ async def test_mnist_mlp(dut):
     await tqv.reset()
 
     tb_model = CocotbModel(tqv, assetdir / "model.json", assetdir / "tensors.bin", acc_width=ACC_WIDTH)
-    dut._log.info("Running inference of a single mnist image")
-    display_image(((x[64].reshape(-1) + 8) / 15) * 255, size=(12, 12))
-    tb_y = await tb_model(x[64])
-    np.testing.assert_array_equal(tb_y[0], y[64])
-    display_outputs(tb_y[0], y_test[64])
+    amt = 4
+    dut._log.info(f"Running inference of {amt} random mnist images")
+    for idx in [random.randint(0, len(x) - 1) for _ in range(amt)]:
+        display_image(((x[idx].reshape(-1) + 8) / 15) * 255, size=(12, 12))
+        tb_y = await tb_model(x[idx])
+        display_outputs(tb_y[0], y_test[idx])
+        np.testing.assert_array_equal(tb_y[0], y[idx])
     # correct = sum(tb_y.argmax(axis=-1) == y_test) print(f"{correct}/{len(x_test)} correct predictions, {100.0 * correct / len(x_test):.0f}% accuracy")
