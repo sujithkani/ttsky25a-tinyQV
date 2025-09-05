@@ -82,7 +82,7 @@ module tqvp_jnms_pdm (
             if (pdm_enable[0] & pcm_valid) begin
                 pcm <= pcm_from_filter;
                 pdm_int <= 1;
-            end else if (address == 6'hc && data_read_n == 2'b10) begin
+            end else if (address == 6'hc && data_read_n != 2'b11) begin
                 pdm_int <= 0;
             end else begin
                 // Hold current values
