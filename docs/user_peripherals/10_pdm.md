@@ -11,21 +11,26 @@ and decodes the returned density signal into Pulse Code Modulation (PCM) words.
 
 ## Register map
 
-| Address | Name  | Access | Description                                                         |
-|---------|-------|--------|---------------------------------------------------------------------|
-| 0x00    | CTRL  | R/W    | PDM control.                                                        |
-| 0x04    | CLKP  | R/W    | PDM clock period (0-64).                                            |
-| 0x08    | PCMW  | R      | PCM word, result of conversion.                                     |
+| Address | Name    | Access | Description                                                         |
+|---------|---------|--------|---------------------------------------------------------------------|
+| 0x00    | ENABLE  | R/W    | Clock gate (0-1).                                                   |
+| 0x04    | PERIOD  | R/W    | PDM clock period (0-255).                                           |
+| 0x08    | SELECT  | R/W    | PDM data pin number (0-7).                                          |
+| 0x0c    | SAMPLE  | R      | PCM sample, result of conversion.                                   |
 
-### CTRL
+### ENABLE
 Bit 0: Enable clock generation.
 
-### CLKP
+### PERIOD
 Number of system clock cycles per PDM clock cycle.
 For example, to generate a 1 MHz clock signal, set this to 64.
 
-### PCMW
+### SELECT
+Which input pin to sample data on.
+
+### SAMPLE
 16-bit signed integer.
+Clears interrupt when read.
 
 ## How to test
 

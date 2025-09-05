@@ -57,7 +57,7 @@ module tqvp_jnms_pdm (
             if (data_write_n != 2'b11) begin
                 if (address == 6'h0) pdm_enable[0]   <= data_in[0];
                 if (address == 6'h4) pdm_period[7:0] <= data_in[7:0];
-                if (address == 6'hc) pdm_select[2:0] <= data_in[2:0];
+                if (address == 6'h8) pdm_select[2:0] <= data_in[2:0];
             end
             pdm_clk   <= pdm_phase   < (pdm_period >> 1);
             pdm_phase <= pdm_phase+1 < pdm_period ? pdm_phase+1 : 0;
@@ -68,8 +68,8 @@ module tqvp_jnms_pdm (
 
     assign data_out = (address == 6'h0) ? {31'h0, pdm_enable} :
                       (address == 6'h4) ? {24'h0, pdm_period} :
-                      (address == 6'h8) ? {16'h0, pcm} :
-                      (address == 6'hc) ? {29'h0, pdm_select} :
+                      (address == 6'h8) ? {29'h0, pdm_select} :
+                      (address == 6'hc) ? {16'h0, pcm} :
                       32'h0;
 
     assign data_ready = 1;
@@ -82,7 +82,7 @@ module tqvp_jnms_pdm (
             if (pdm_enable[0] & pcm_valid) begin
                 pcm <= pcm_from_filter;
                 pdm_int <= 1;
-            end else if (address == 6'h8 && data_read_n == 2'b10) begin
+            end else if (address == 6'hc && data_read_n == 2'b10) begin
                 pdm_int <= 0;
             end else begin
                 // Hold current values
