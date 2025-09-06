@@ -87,7 +87,7 @@ If MTIME is after MTIMECMP (by less than 2^30 microseconds to deal with wrap), t
 | 12                    | 08 Prism out 7 |
 | 13                    | 11 Analog toolkit out 7 |
 | 14                    | 20 PWL Synth out 6 |
-| 15                    | 21 Matt PWM out 7 |
+| 15                    | 15 Tiny Tone out 7 |
 
 ### UART
 

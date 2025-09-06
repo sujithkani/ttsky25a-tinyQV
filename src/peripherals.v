@@ -189,7 +189,7 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
             3'b100: audio <= uo_out_from_user_peri[8][7];    // Prism
             3'b101: audio <= uo_out_from_simple_peri[10][7]; // Analog toolkit
             3'b110: audio <= uo_out_from_simple_peri[17][6]; // PWL Synth left
-            3'b111: audio <= uo_out_from_simple_peri[5][7];  // Matt PWM
+            3'b111: audio <= uo_out_from_user_peri[15][7];   // Tiny tone
         endcase
     end
 
