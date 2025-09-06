@@ -29,6 +29,10 @@ async def test_start(dut):
   # Should start reading flash after 1 cycle
   await ClockCycles(dut.clk, 1)
   await start_read(dut, 0)
+
+  # Read ID
+  await send_instr(dut, InstructionLW(x1, tp, 0x8).encode())
+  assert await read_reg(dut, x1) == ord('A')
   
   for i in range(8):
     await send_instr(dut, InstructionADDI(i+8, x0, 0x102*i).encode())

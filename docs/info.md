@@ -42,6 +42,7 @@ The peripherals making up the SoC are contributed by the Tiny Tapeout community,
 
 | Register | Address | Description |
 | -------- | ------- | ----------- |
+| ID       | 0x8000008 (R) | Instance of TinyQV: 0x41 (ASCII A) |
 | SEL      | 0x800000C (R/W) | Bits 6-7 enable peripheral output on the corresponding bit on out6-7, otherwise out6-7 is used for debug. |
 | DEBUG_UART_DATA | 0x8000018 (W) | Transmits the byte on the debug UART |
 | STATUS   | 0x800001C (R) | Bit 0 indicates whether the debug UART TX is busy, bytes should not be written to the data register while this bit is set. |
@@ -87,7 +88,7 @@ If MTIME is after MTIMECMP (by less than 2^30 microseconds to deal with wrap), t
 | 11                    | 21 Matt PWM out 7 |
 | 12                    | 08 Prism out 7 |
 | 13                    | 11 Analog toolkit out 7 |
-| 14                    | 20 PWL Synth out 6 |
+| 14                    | 33 PWL Synth out 6 |
 | 15                    | 15 Tiny Tone out 7 |
 
 ### UART
