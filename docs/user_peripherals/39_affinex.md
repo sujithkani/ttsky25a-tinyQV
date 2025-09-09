@@ -10,11 +10,13 @@ also need to set this value as the PERIPHERAL_NUM in your test script.
 You can also include images in this folder and reference them in the markdown. Each image must be less than
 512 kb in size, and the combined size of all images must be less than 1 MB.
 -->
+
 # Affinex - Affine Transformation Accelerator
 
 Author: Adam Gebregziaber
 
 Peripheral index: 39
+
 
 ## What it does
 
@@ -27,7 +29,7 @@ Affine transformation in 2D can be expressed as:
 <div align="center">
 
 <tr>
-<td><img src="affine.png" alt="Affine" width="400"></td>
+<td><img src="39_affine.png" alt="Affine" width="400"></td>
 </tr>
 
 </div>
@@ -36,22 +38,22 @@ Affine transformation in 2D can be expressed as:
 Equation:
  
 
-                                                         x' = a * x + b * y + tx
-                                                         y' = d * x + e * y + ty
+                                                        x' = a * x + b * y + tx
+                                                        y' = d * x + e * y + ty
 
 
-                                                         Input Point (x, y)
-                                                               |
-                                                               v
+                                                        Input Point (x, y)
+                                                                |
+                                                                v
                                                             [ a  b ]
                                                             [ d  e ]  (2D transformation matrix)
-                                                               |
-                                                               |
-                                                               v
-                                                         Translation vector (tx, ty)
-                                                               |
-                                                               v
-                                                         Output Point (x', y')
+                                                                |
+                                                                |
+                                                                v
+                                                        Translation vector (tx, ty)
+                                                                |
+                                                                v
+                                                        Output Point (x', y')
 
 
 
@@ -81,7 +83,6 @@ Equation:
 The following test cases demonstrate common affine operations using matrix coefficients and translation offsets.
 
 
-
 | Transformation | a  | b   | d   | e  | tx   | ty   | Input (x, y) | Expected Output (x’, y’) |
 | -------------- | -- | --- | --- | -- | ---- | ---- | ------------ | ------------------------ |
 | Scale ×2       | 2  | 0   | 0   | 2  | 0    | 0    | (1.5, -2.25) | (3.0, -4.5)              |
@@ -100,16 +101,15 @@ To help visualize the transformations, a conceptual square shape is plotted alon
 <div align="center">
 <table>
 <tr>
-<td><img src="scale.png" alt="Rotation" width="350"></td>
-<td><img src="reflection.png" alt="Scaling" width="350"></td>
+<td><img src="39_scale.png" alt="Rotation" width="350"></td>
+<td><img src="39_reflection.png" alt="Scaling" width="350"></td>
 </tr>
 <tr>
-<td><img src="shear.png" alt="Horizontal Shear" width="350"></td>
-<td><img src="rotation.png" alt="Translation" width="350"></td>
+<td><img src="39_shear.png" alt="Horizontal Shear" width="350"></td>
+<td><img src="39_rotation.png" alt="Translation" width="350"></td>
 </tr>
 </table>
 </div>
-
 
 ## Example Usage
 
@@ -155,8 +155,7 @@ To help visualize the transformations, a conceptual square shape is plotted alon
 
 ## Design Verification
 
-The design is verified using **Cocotb** testbench over a wide range of input cases and the output is compared against software-calculated results using the Q7.8 fixed point arithmetic.
-
+The design is verified using **Cocotb** testbench over a wide range of input cases and the output is compared against software calculated results using the Q7.8 fixed point arithmetic.
 ### What’s Tested
 
 - **All affine operations**:
