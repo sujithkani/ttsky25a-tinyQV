@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 `default_nettype none
-module pwm_sk(
+module tqvp_pwm_sujith(
     input  wire       clk,
     input  wire       rst_n,
     input  wire [7:0] ui_in,
