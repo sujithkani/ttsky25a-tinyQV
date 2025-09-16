@@ -14,26 +14,34 @@ module pwm_sk(
     output wire [6:0] counter_out,  // FIX: Separate output for the counter bits.
     output wire [7:0] data_out
 );
-    //INTERNAL LOGIC
+
+    // --- INTERNAL LOGIC (Unchanged) ---
     reg [7:0] duty;
     reg [7:0] counter;
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n)
             duty <= 8'd0;
         else if (data_write && address == 4'h0)
             duty <= data_in;
     end
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n)
             counter <= 8'd0;
         else
             counter <= counter + 1;
     end
+
     assign data_out = (address == 4'h0) ? duty : 8'd0;
-    //OUTPUT ASSIGNMENT
-    //Assign the core PWM logic to its dedicated output port.
+
+    // --- OUTPUT ASSIGNMENTS (Corrected) ---
+
+    // Assign the core PWM logic to its dedicated output port.
     assign pwm_out = (duty == 8'd0)   ? 1'b0 :
                      (duty == 8'd255) ? 1'b1 :
                      (counter < duty);
+
+    // Assign the counter bits to their dedicated output port.
     assign counter_out = counter[7:1];
 endmodule
