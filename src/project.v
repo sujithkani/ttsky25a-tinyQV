@@ -5,7 +5,7 @@
 
 `default_nettype none
 
-module tt_um_tt_tinyQV (
+module tt_um_tt_tinyQV #(parameter CLOCK_MHZ=64) (
     input  wire [7:0] ui_in,    // Dedicated inputs
     output wire [7:0] uo_out,   // Dedicated outputs
     input  wire [7:0] uio_in,   // IOs: Input path - only some bits used
@@ -18,12 +18,12 @@ module tt_um_tt_tinyQV (
 
     // Address to peripheral map
     localparam PERI_NONE = 4'h0;
+    localparam PERI_ID = 4'h2;
     localparam PERI_GPIO_OUT_SEL = 4'h3;
     localparam PERI_DEBUG_UART = 4'h6;
     localparam PERI_DEBUG_UART_STATUS = 4'h7;
+    localparam PERI_TIME_LIMIT = 4'hB;
     localparam PERI_DEBUG = 4'hC;
-    localparam PERI_MTIME = 4'hD;
-    localparam PERI_MTIMECMP = 4'hE;
     localparam PERI_USER = 4'hF;
 
     // Register the reset on the negative edge of clock for safety.
@@ -41,7 +41,9 @@ module tt_um_tt_tinyQV (
     wire       qspi_flash_select;
     wire       qspi_ram_a_select;
     wire       qspi_ram_b_select;
-    assign uio_out = {qspi_ram_b_select, qspi_ram_a_select, qspi_data_out[3:2], 
+    wire       audio;
+    wire       audio_select;
+    assign uio_out = {audio_select ? audio : qspi_ram_b_select, qspi_ram_a_select, qspi_data_out[3:2], 
                       qspi_clk_out, qspi_data_out[1:0], qspi_flash_select};
     assign uio_oe = rst_n ? {2'b11, qspi_data_oe[3:2], 1'b1, qspi_data_oe[1:0], 1'b1} : 8'h00;
 
@@ -84,9 +86,9 @@ module tt_um_tt_tinyQV (
     wire debug_uart_tx_busy;
     wire debug_uart_tx_start = write_n != 2'b11 && connect_peripheral == PERI_DEBUG_UART;
 
-    // MTIME
-    wire [31:0] mtime_data;
-    wire timer_interrupt;
+    // Time
+    reg [6:2] time_limit;
+    wire time_pulse;
 
     // Peripherals interface
     wire [7:0] peri_out;
@@ -119,7 +121,7 @@ module tt_um_tt_tinyQV (
         .data_in(data_from_read),
 
         .interrupt_req(interrupt_req),
-        .timer_interrupt(timer_interrupt),
+        .time_pulse(time_pulse),
 
         .spi_data_in(qspi_data_in),
         .spi_data_out(qspi_data_out),
@@ -155,12 +157,16 @@ module tt_um_tt_tinyQV (
     assign uo_out[6] = gpio_out_sel[6] ? peri_out[6] : debug_uart_txd;
     assign uo_out[7] = gpio_out_sel[7] ? peri_out[7] : debug_signal;
 
-    tinyQV_peripherals i_peripherals (
+    tinyQV_peripherals #(.CLOCK_MHZ(CLOCK_MHZ)) i_peripherals (
         .clk(clk),
         .rst_n(rst_reg_n),
 
         .ui_in(ui_in_sync),
+        .ui_in_raw(ui_in),
         .uo_out(peri_out),
+
+        .audio(audio),
+        .audio_select(audio_select),
 
         .addr_in(addr[10:0]),
         .data_in(data_to_write),
@@ -188,10 +194,10 @@ module tt_um_tt_tinyQV (
     // Read data
     always @(*) begin
         case (connect_peripheral)
+            PERI_ID:          data_from_read = {24'h0, 8'h41};  // A instance
             PERI_GPIO_OUT_SEL:data_from_read = {24'h0, gpio_out_sel, 6'h0};
             PERI_DEBUG_UART_STATUS: data_from_read = {31'h0, debug_uart_tx_busy};
-            PERI_MTIME:       data_from_read = mtime_data;
-            PERI_MTIMECMP:    data_from_read = mtime_data;
+            PERI_TIME_LIMIT:  data_from_read = {25'h0, time_limit, 2'b11};
             PERI_USER:        data_from_read = peri_data_out;
             default:          data_from_read = 32'hFFFF_FFFF;
         endcase
@@ -203,13 +209,15 @@ module tt_um_tt_tinyQV (
     always @(posedge clk) begin
         if (!rst_reg_n) begin
             gpio_out_sel <= {!ui_in[0], 1'b0};
+            time_limit <= (CLOCK_MHZ / 4 - 1);
         end
         if (write_n != 2'b11) begin
             if (connect_peripheral == PERI_GPIO_OUT_SEL) gpio_out_sel <= data_to_write[7:6];
+            if (connect_peripheral == PERI_TIME_LIMIT) time_limit <= data_to_write[6:2];
         end
     end
 
-    uart_tx #(.CLK_HZ(64_000_000), .BIT_RATE(4_000_000)) i_debug_uart_tx(
+    uart_tx #(.CLK_HZ(CLOCK_MHZ * 1_000_000), .BIT_RATE(4_000_000)) i_debug_uart_tx(
         .clk(clk),
         .resetn(rst_reg_n),
         .uart_txd(debug_uart_txd),
@@ -218,35 +226,23 @@ module tt_um_tt_tinyQV (
         .uart_tx_busy(debug_uart_tx_busy) 
     );
 
-    reg [5:0] time_count;
-    tinyQV_time i_time(
-        .clk(clk),
-        .rstn(rst_reg_n),
+    reg [6:0] time_count;
 
-        .time_pulse(time_count == 6'h3F),
-
-        .set_mtime(connect_peripheral == PERI_MTIME && write_n == 2'b10),
-        .set_mtimecmp(connect_peripheral == PERI_MTIMECMP && write_n == 2'b10),
-        .data_in(data_to_write),
-
-        .read_mtimecmp(connect_peripheral == PERI_MTIMECMP),
-        .data_out(mtime_data),
-
-        .timer_interrupt(timer_interrupt)
-    );
     always @(posedge clk) begin
         if (!rst_reg_n) begin
             time_count <= 0;
         end else begin
-            time_count <= time_count + 1;
+            if (time_pulse) time_count <= 0;
+            else time_count <= time_count + 1;
         end
     end
+    assign time_pulse = time_count == {time_limit, 2'b11};
 
     // Debug
     always @(posedge clk) begin
         if (!rst_reg_n)
             debug_register_data <= ui_in[1];
-        else if (connect_peripheral == PERI_DEBUG)
+        else if (write_n != 2'b11 && connect_peripheral == PERI_DEBUG)
             debug_register_data <= data_to_write[0];
     end
 

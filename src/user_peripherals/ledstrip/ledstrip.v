@@ -8,7 +8,7 @@
 // Change the name of this module to something that reflects its functionality and includes your name for uniqueness
 // For example tqvp_yourname_spi for an SPI peripheral.
 // Then edit tt_wrapper.v line 38 and change tqvp_example to your chosen module name.
-module tqvp_cattuto_ws2812b_driver (
+module tqvp_cattuto_ws2812b_driver #(parameter CLOCK_MHZ=64) (
     input         clk,          // Clock - the TinyQV project clock is normally set to 64MHz.
     input         rst_n,        // Reset_n - low to reset.
 
@@ -26,7 +26,7 @@ module tqvp_cattuto_ws2812b_driver (
     output [7:0]  data_out      // Data out from the peripheral, set this in accordance with the supplied address
 );
 
-    localparam REG_CTRL=4'h0, REG_G=4'h1, REG_R=4'h2, REG_B=4'h3, REG_CHAR=4'h4;
+    localparam REG_CTRL=4'h0, REG_R=4'h1, REG_G=4'h2, REG_B=4'h3, REG_CHAR=4'h4;
     localparam CHAR_LEDS = 5 * 7; // 5x7 char matrix
 
     reg valid;
@@ -44,7 +44,6 @@ module tqvp_cattuto_ws2812b_driver (
     wire latch;
     assign latch = (counter == 1) ? will_latch : 0;
 
-    assign ledstrip_reset = ~rst_n;
     assign ledstrip_valid = valid;
     assign ledstrip_latch = latch;
 
@@ -55,7 +54,7 @@ module tqvp_cattuto_ws2812b_driver (
             will_latch <= 0;
             counter <= 0;
             valid <= 0;
-            color <= 0;
+            color <= 24'h002000;
             clear <= 0;
             use_rom <= 0;
             char_index <= 0;
@@ -69,13 +68,13 @@ module tqvp_cattuto_ws2812b_driver (
                         use_rom <= 0;
                         ready <= 0;
                     end
-
-                    REG_G: begin
-                        color[23:16] <= data_in;
-                    end
                     
                     REG_R: begin
                         color[15:8] <= data_in;
+                    end
+
+                    REG_G: begin
+                        color[23:16] <= data_in;
                     end
 
                     REG_B: begin
@@ -119,14 +118,13 @@ module tqvp_cattuto_ws2812b_driver (
 
     wire [23:0] ledstrip_data;
     wire ledstrip_valid;
-    wire ledstrip_reset;
     wire ledstrip_latch;
     wire ledstrip_ready;
     wire ledstrip;
 
-    ws2812b ws2812b_inst (
+    ws2812b #(.CLOCK_MHZ(CLOCK_MHZ)) ws2812b_inst (
         .clk(clk),
-        .reset(ledstrip_reset),
+        .rst_n(rst_n),
         .data_in(ledstrip_data),
         .valid(ledstrip_valid),
         .latch(ledstrip_latch),

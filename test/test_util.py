@@ -13,7 +13,11 @@ async def reset(dut, latency=1, ui_in=0x80):
     dut._log.info(f"Reset, latency {latency}")
     dut.ena.value = 1
     dut.ui_in_base.value = ui_in
-    dut.uio_in.value = 0
+    dut.uio_in[0].value = 0
+    dut.uio_in[3].value = 0
+    dut.uio_in[6].value = 0
+    dut.uio_in[7].value = 0
+    dut.qspi_data_in.value = 0
     dut.rst_n.value = 1
     dut.uart_rx.value = 1
     await ClockCycles(dut.clk, 2)
@@ -138,12 +142,12 @@ async def start_write(dut, addr):
 
 nibble_shift_order = [4, 0, 12, 8, 20, 16, 28, 24]
 
-async def send_instr(dut, data, ok_to_exit=False):
+async def send_instr(dut, data, ok_to_exit=False, allow_long_delay=False):
     instr_len = 8 if (data & 3) == 3 else 4
     for i in range(instr_len):
         dut.qspi_data_in.value = (data >> (nibble_shift_order[i])) & 0xF
         await ClockCycles(dut.clk, 1, False)
-        for _ in range(20):
+        for _ in range(400 if allow_long_delay else 20):
             if ok_to_exit and dut.qspi_flash_select.value == 1:
                 return
             assert dut.qspi_flash_select.value == 0
@@ -214,20 +218,25 @@ async def nops_loop(dut):
     while send_nops:
         await send_instr(dut, InstructionADDI(x0, x0, 0).encode())
 
-def start_nops(dut):
+async def start_nops(dut):
     global send_nops, nop_task
     send_nops = True
     nop_task = cocotb.start_soon(nops_loop(dut))
 
+    # This ensures that the nop task is actually started, so that it can be instantly stopped.
+    await Timer(2, "ps")
+
 async def stop_nops():
     global send_nops, nop_task
     send_nops = False
-    await nop_task
+    if nop_task is not None:
+        await nop_task
+    nop_task = None
 
 async def read_byte(dut, reg, expected_val):
   await send_instr(dut, InstructionSW(tp, reg, 0x18).encode())
 
-  start_nops(dut)
+  await start_nops(dut)
   for i in range(80):
       if dut.debug_uart_tx.value == 0:
           break
@@ -246,7 +255,7 @@ async def read_byte(dut, reg, expected_val):
 
   await stop_nops()
 
-async def expect_store(dut, addr, bytes=4):
+async def expect_store(dut, addr, bytes=4, allow_long_delay=False):
     if addr >= 0x1800000:
         select = dut.qspi_ram_b_select
     elif addr >= 0x1000000:
@@ -261,9 +270,14 @@ async def expect_store(dut, addr, bytes=4):
             for j in range(bytes*2):
                 await ClockCycles(dut.clk, 1, False)
                 assert select.value == 0
+                if j > 0 and (j % 8) == 0:
+                    await ClockCycles(dut.clk, 1, False)
+                    assert select.value == 0
+                    assert dut.qspi_clk_out.value == 0
+                    await ClockCycles(dut.clk, 1, False)
                 assert dut.qspi_clk_out.value == 1
                 assert dut.qspi_data_oe.value == 0xF
-                val |= dut.qspi_data_out.value << (nibble_shift_order[j])
+                val |= dut.qspi_data_out.value << (nibble_shift_order[j % 8])
                 await ClockCycles(dut.clk, 1, False)
                 assert select.value == (1 if j == bytes*2-1 else 0)
                 assert dut.qspi_clk_out.value == 0
@@ -271,7 +285,7 @@ async def expect_store(dut, addr, bytes=4):
             assert select.value == 1
             break
         elif dut.qspi_flash_select.value == 0:
-            await send_instr(dut, 0x0001, True)
+            await send_instr(dut, 0x0001, True, allow_long_delay)
         else:
             await ClockCycles(dut.clk, 1, False)
     else:
@@ -290,12 +304,12 @@ async def expect_store(dut, addr, bytes=4):
 
     return val
 
-async def read_reg(dut, reg):
+async def read_reg(dut, reg, allow_long_delay=False):
     offset = random.randint(-0x400, 0x3FF)
     instr = InstructionSW(gp, reg, offset).encode()
     await send_instr(dut, instr)
 
-    return await expect_store(dut, 0x1000400 + offset)
+    return await expect_store(dut, 0x1000400 + offset, 4, allow_long_delay)
 
 async def set_all_outputs_to_peripheral(dut, peripheral_num):
     await send_instr(dut, InstructionADDI(a0, x0, 0xc0).encode())

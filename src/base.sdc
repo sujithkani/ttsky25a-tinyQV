@@ -12,7 +12,7 @@ set_input_delay 1.5 -clock [get_clocks $::env(CLOCK_PORT)] {rst_n}
 # Note "setup" is actually 1 clock cycle minus setup, so this requires a setup
 # period of 35% of the clock cycle
 set input_setup_delay_value [expr $::env(CLOCK_PERIOD) * 0.65]
-set input_hold_delay_value [expr $::env(CLOCK_PERIOD) * 0.2]
+set input_hold_delay_value [expr $::env(CLOCK_PERIOD) * 0.24]
 set_input_delay -clock [get_clocks $::env(CLOCK_PORT)] -max $input_setup_delay_value {uio_in ui_in}
 set_input_delay -clock [get_clocks $::env(CLOCK_PORT)] -min $input_hold_delay_value {uio_in ui_in}
 
@@ -23,9 +23,12 @@ set_output_delay -clock [get_clocks $::env(CLOCK_PORT)] -max $output_setup_delay
 set_output_delay -clock [get_clocks $::env(CLOCK_PORT)] -min $output_hold_delay_value {uio_out uio_oe}
 
 # Lower delay on SPI clock output because it can be driven at negedge for timing tweaking
-set spi_clk_setup_delay_value [expr $::env(CLOCK_PERIOD) * 0.2]
+set spi_clk_setup_delay_value [expr $::env(CLOCK_PERIOD) * 0.18]
 set_output_delay -clock [get_clocks $::env(CLOCK_PORT)] -max $spi_clk_setup_delay_value {uio_out[3]}
 
 # Delays on user outputs
 set_output_delay -clock [get_clocks $::env(CLOCK_PORT)] -min 1 {uo_out}
-set_output_delay -clock [get_clocks $::env(CLOCK_PORT)] -max 2 {uo_out}
+set_output_delay -clock [get_clocks $::env(CLOCK_PORT)] -max 1 {uo_out}
+
+# User peripheral SDC files
+read_sdc src/user_peripherals/pwl_synth/pwl_synth.sdc

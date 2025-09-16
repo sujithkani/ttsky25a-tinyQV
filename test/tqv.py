@@ -15,12 +15,17 @@ class TinyQV:
         self.peripheral_num = peripheral_num
         if peripheral_num < 16:
             self.base_address = peripheral_num * 0x40
+        elif peripheral_num >= 32:
+            self.base_address = peripheral_num * 0x40 - 0x200
         else:
             self.base_address = 0x300 + peripheral_num * 0x10
 
     # Reset the design, this reset will initialize TinyQV and connect
     # all inputs and outputs to your peripheral.
     async def reset(self, initial_ui_in=0):
+        # Ensure any previously running test is cleaned up
+        await test_util.stop_nops()
+
         await test_util.reset(self.dut, 1, initial_ui_in)
 
         # Should start reading flash after 1 cycle
@@ -29,7 +34,7 @@ class TinyQV:
         
         await test_util.set_all_outputs_to_peripheral(self.dut, self.peripheral_num)
 
-        test_util.start_nops(self.dut)
+        await test_util.start_nops(self.dut)
 
     # Write a value to a byte register in your design
     # reg is the address of the register in the range 0-15
@@ -44,7 +49,7 @@ class TinyQV:
             # Read a register in order to ensure the store is complete before returning
             assert await test_util.read_reg(self.dut, a1) == value
 
-        test_util.start_nops(self.dut)
+        await test_util.start_nops(self.dut)
 
     # Read the value of a byte register from your design
     # reg is the address of the register in the range 0-15
@@ -52,8 +57,8 @@ class TinyQV:
     async def read_reg(self, reg):
         await test_util.stop_nops()
         await test_util.send_instr(self.dut, InstructionLBU(a1, tp, self.base_address + reg).encode())
-        val = await test_util.read_reg(self.dut, a1)
-        test_util.start_nops(self.dut)
+        val = await test_util.read_reg(self.dut, a1, True)
+        await test_util.start_nops(self.dut)
         return val
 
     # Write a value to a byte register in your design
@@ -89,7 +94,7 @@ class TinyQV:
             # Read a register in order to ensure the store is complete before returning
             assert await test_util.read_reg(self.dut, a1) == value
 
-        test_util.start_nops(self.dut)
+        await test_util.start_nops(self.dut)
 
     # Read the value of a half word register from your design
     # reg is the address of the register in the range 0-15
@@ -97,8 +102,8 @@ class TinyQV:
     async def read_hword_reg(self, reg):
         await test_util.stop_nops()
         await test_util.send_instr(self.dut, InstructionLHU(a1, tp, self.base_address + reg).encode())
-        val = await test_util.read_reg(self.dut, a1)
-        test_util.start_nops(self.dut)
+        val = await test_util.read_reg(self.dut, a1, True)
+        await test_util.start_nops(self.dut)
         return val
 
     # Write a value to a word register in your design
@@ -109,7 +114,7 @@ class TinyQV:
         await test_util.stop_nops()
 
         # Prepare value for LUI + ADDI
-        value_upper = (value + 0x800) >> 12
+        value_upper = ((value + 0x800) >> 12) & 0xfffff
         value_lower = value & 0xfff
         if value_lower >= 0x800:
             value_lower -= 0x1000
@@ -122,7 +127,7 @@ class TinyQV:
             # Read a register in order to ensure the store is complete before returning
             assert await test_util.read_reg(self.dut, a1) == value
 
-        test_util.start_nops(self.dut)
+        await test_util.start_nops(self.dut)
 
     # Read the value of a word register from your design
     # reg is the address of the register in the range 0-15
@@ -130,8 +135,8 @@ class TinyQV:
     async def read_word_reg(self, reg):
         await test_util.stop_nops()
         await test_util.send_instr(self.dut, InstructionLW(a1, tp, self.base_address + reg).encode())
-        val = await test_util.read_reg(self.dut, a1)
-        test_util.start_nops(self.dut)
+        val = await test_util.read_reg(self.dut, a1, True)
+        await test_util.start_nops(self.dut)
         return val
 
     # Check whether the user interrupt is asserted
@@ -139,5 +144,5 @@ class TinyQV:
         await test_util.stop_nops()
         await test_util.send_instr(self.dut, InstructionCSRRS(a1, x0, csrnames.mip).encode())
         val = await test_util.read_reg(self.dut, a1)
-        test_util.start_nops(self.dut)
+        await test_util.start_nops(self.dut)
         return (val & (1 << (16 + self.peripheral_num))) != 0
