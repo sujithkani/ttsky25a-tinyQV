@@ -54,7 +54,7 @@ async def test_pwm_duty_cycles(dut):
 
     tqv = TinyQV(dut.user_project, PERIPHERAL_NUM)
 
-    # --- FIX: Perform a complete manual reset, including the 'ena' signal ---
+    # --- THIS IS THE CORRECT, COMPLETE RESET SEQUENCE ---
     dut._log.info("Resetting DUT...")
     dut.rst_n.value = 0
     dut.ena.value = 0  # Keep chip disabled during reset
@@ -63,7 +63,7 @@ async def test_pwm_duty_cycles(dut):
     dut.ena.value = 1  # De-assert reset AND enable the chip
     await ClockCycles(dut.clk, 10) # Wait a bit for clocks to stabilize
     dut._log.info("Reset done")
-    # --- End of FIX ---
+    # --- END OF CORRECTION ---
 
     pwm_period = 256
 
