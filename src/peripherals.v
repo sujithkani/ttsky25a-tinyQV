@@ -533,20 +533,31 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .data_out(data_from_simple_peri[3])
     );
 
+
+    // --- THIS IS THE NEW, CORRECTED CODE ---
+
+    // Wires to receive the new, separated outputs from the pwm_sk module
+    wire pwm_out_from_sk;
+    wire [6:0] counter_out_from_sk;
+
+    // Instantiate the corrected pwm_sk module
     tqvp_pwm_sujith pwm_sk(
         .clk(clk),
         .rst_n(rst_n),
 
         .ui_in(ui_in),
-        .uo_out(uo_out_from_simple_peri[4]),
-
         .address(addr_in[3:0]),
-
         .data_write((data_write_n != 2'b11) & peri_simple[4]),
         .data_in(data_in[7:0]),
 
+        // Connect to the new, corrected ports
+        .pwm_out(pwm_out_from_sk),
+        .counter_out(counter_out_from_sk),
         .data_out(data_from_simple_peri[4])
     );
+
+    // Re-combine the separated outputs onto the system bus in the original order
+    assign uo_out_from_simple_peri[4] = {counter_out_from_sk, pwm_out_from_sk};
 
     tqvp_matt_pwm matt_pwm (
         .clk(clk),
