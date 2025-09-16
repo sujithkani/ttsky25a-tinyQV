@@ -19,8 +19,8 @@ async def measure_pwm(dut, expected_duty_value):
     pwm_period = 256
     high_cycles = 0
     
-    # Get a reference to the corrected PWM output pin
-    pwm_pin = dut.io_out[8]
+    # FIX #1: The io_out port is inside the 'dut' instance within the testbench.
+    pwm_pin = dut.dut.io_out[8]
 
     # Handle the 0% duty cycle case (always low)
     if expected_duty_value == 0:
@@ -58,13 +58,12 @@ async def test_pwm_duty_cycles(dut):
     clock = Clock(dut.clk, 10, units="ns")
     cocotb.start_soon(clock.start())
 
-    # Initialize the tqv helper with the peripheral NUMBER.
-    tqv = TinyQV(dut, PERIPHERAL_NUM)
+    # FIX #2: The TinyQV helper needs to talk to the chip instance ('dut'), not the testbench ('tb').
+    tqv = TinyQV(dut.dut, PERIPHERAL_NUM)
 
     await tqv.reset()
     dut._log.info("Reset done")
 
-    # This line was missing, causing the NameError. It is now fixed.
     pwm_period = 256
 
     # Define test cases: (duty_to_write, expected_high_cycles)
