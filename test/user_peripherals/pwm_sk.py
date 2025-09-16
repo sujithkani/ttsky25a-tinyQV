@@ -8,8 +8,7 @@ from cocotb.triggers import ClockCycles, RisingEdge, Timer
 # This helper class is part of the Tiny Tapeout test infrastructure
 from tqv import TinyQV 
 
-# FIX: Initialize with the peripheral *number*, not its memory address.
-# Your module is simple peripheral #4. The test framework uses the
+# Your PWM is simple peripheral #4. The test framework uses the
 # convention of 16 + index for simple peripherals.
 PERIPHERAL_NUM = 16 + 4
 
@@ -59,11 +58,14 @@ async def test_pwm_duty_cycles(dut):
     clock = Clock(dut.clk, 10, units="ns")
     cocotb.start_soon(clock.start())
 
-    # FIX: Initialize the tqv helper with the peripheral NUMBER.
+    # Initialize the tqv helper with the peripheral NUMBER.
     tqv = TinyQV(dut, PERIPHERAL_NUM)
 
     await tqv.reset()
     dut._log.info("Reset done")
+
+    # This line was missing, causing the NameError. It is now fixed.
+    pwm_period = 256
 
     # Define test cases: (duty_to_write, expected_high_cycles)
     test_cases = [
