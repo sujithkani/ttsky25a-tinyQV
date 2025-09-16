@@ -3,44 +3,94 @@
 
 import cocotb
 from cocotb.clock import Clock
-from cocotb.triggers import ClockCycles
-from tqv import TinyQV
+from cocotb.triggers import ClockCycles, RisingEdge, Timer
 
-PERIPHERAL_NUM = 16+4
+# This helper class is part of the Tiny Tapeout test infrastructure
+from tqv import TinyQV 
+
+# In tinyQV_peripherals.v, your PWM module is simple peripheral #4.
+# The memory map places it at base address 0x440.
+PERIPHERAL_BASE_ADDR = 0x440
+
+async def measure_pwm(dut, expected_duty_value):
+    """
+    Measures the PWM signal on io_out[8] to verify its duty cycle.
+    """
+    pwm_period = 256
+    high_cycles = 0
+    
+    # Get a reference to the corrected PWM output pin
+    pwm_pin = dut.io_out[8]
+
+    # Handle the 0% duty cycle case (always low)
+    if expected_duty_value == 0:
+        await ClockCycles(dut.clk, pwm_period)
+        assert pwm_pin.value == 0, f"FAIL: PWM should be constantly LOW for 0% duty, but was {pwm_pin.value}"
+        return 0
+
+    # Handle the 100% duty cycle case (always high in your Verilog)
+    if expected_duty_value == 255:
+        await ClockCycles(dut.clk, pwm_period)
+        assert pwm_pin.value == 1, f"FAIL: PWM should be constantly HIGH for 100% duty, but was {pwm_pin.value}"
+        return pwm_period
+
+    # For other values, wait for a rising edge to start the measurement
+    try:
+        # The simulation clock is 100MHz (10ns period). Timeout after 2 PWM periods.
+        await RisingEdge(pwm_pin, timeout=Timer(pwm_period * 2 * 10, units='ns'))
+    except cocotb.result.SimTimeoutError:
+        assert False, f"FAIL: Timed out waiting for rising edge. PWM for duty={expected_duty_value} is not toggling."
+
+    # Count the number of high cycles over one full period
+    for _ in range(pwm_period):
+        if pwm_pin.value == 1:
+            high_cycles += 1
+        await ClockCycles(dut.clk, 1)
+        
+    return high_cycles
+
 
 @cocotb.test()
-async def test_project(dut):
-    dut._log.info("Start")
+async def test_pwm_duty_cycles(dut):
+    dut._log.info("Start Comprehensive PWM Test")
 
-    # 10 MHz clock
-    clock = Clock(dut.clk, 100, units="ns")
+    # The simulation runs at 100 MHz
+    clock = Clock(dut.clk, 10, units="ns")
     cocotb.start_soon(clock.start())
 
-    tqv = TinyQV(dut, PERIPHERAL_NUM)
+    tqv = TinyQV(dut, PERIPHERAL_BASE_ADDR)
 
     await tqv.reset()
     dut._log.info("Reset done")
 
-    # Write duty = 64 (25%)
-    await tqv.write_reg(0, 64)
-    readback = await tqv.read_reg(0)
-    assert readback == 64, f"Expected 64, got {readback}"
-    dut._log.info("PWM duty written and verified")
+    # Define test cases: (duty_to_write, expected_high_cycles)
+    # For duty=255, the special case in Verilog makes it high for all 256 cycles.
+    test_cases = [
+        (64, 64),      # 25% duty
+        (192, 192),    # 75% duty
+        (0, 0),        # 0% duty
+        (255, 256),    # 100% duty
+    ]
 
-    seen_high = False
-    seen_low = False
+    for duty_value, expected_high in test_cases:
+        dut._log.info(f"--- Testing Duty Cycle: {duty_value} ---")
+        
+        # Write the duty cycle value to register 0 of the peripheral
+        await tqv.write_reg(0, duty_value)
+        
+        # Read back from the data_out port (io_out[7:0]) to verify the write
+        readback_bus = await tqv.read_reg(0)
+        readback_val = int(readback_bus & 0xFF)
+        assert readback_val == duty_value, f"FAIL: Write failed! Expected {duty_value}, got {readback_val}"
+        dut._log.info(f"Wrote duty={duty_value} and verified readback.")
+        
+        # Give the PWM a moment to stabilize
+        await ClockCycles(dut.clk, pwm_period * 2)
+        
+        # Measure the actual duty cycle from the output pin
+        measured_high = await measure_pwm(dut, duty_value)
+        
+        assert measured_high == expected_high, f"FAIL: Duty cycle mismatch! For duty={duty_value}, expected {expected_high} high cycles, but measured {measured_high}"
+        dut._log.info(f"PASS: Verified {measured_high} high cycles as expected.")
 
-    for i in range(1024):
-        await ClockCycles(dut.clk, 1)
-        pwm = int(dut.uo_out.value[0])
-        if pwm == 1 and not seen_high:
-            seen_high = True
-            dut._log.info(f"PWM went HIGH at cycle {i}")
-        if pwm == 0 and seen_high and not seen_low:
-            seen_low = True
-            dut._log.info(f"PWM went LOW at cycle {i}")
-        if seen_high and seen_low:
-            break
-
-    assert seen_high and seen_low, "PWM did not toggle as expected"
-    dut._log.info("PWM toggled successfully — Test passed.")
+    dut._log.info("All PWM test cases passed!")
