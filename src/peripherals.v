@@ -532,14 +532,10 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
 
         .data_out(data_from_simple_peri[3])
     );
-
-
-    // --- THIS IS THE NEW, CORRECTED CODE ---
-
-    // Wires to receive the new, separated outputs from the pwm_sk module
+    
+    // Wires to receive the new, separated outputs from the corrected pwm_sk module
     wire pwm_out_from_sk;
     wire [6:0] counter_out_from_sk;
-
     // Instantiate the corrected pwm_sk module
     tqvp_pwm_sujith pwm_sk(
         .clk(clk),
@@ -555,8 +551,8 @@ module tinyQV_peripherals #(parameter CLOCK_MHZ=64) (
         .counter_out(counter_out_from_sk),
         .data_out(data_from_simple_peri[4])
     );
-
-    // Re-combine the separated outputs onto the system bus in the original order
+    // Re-combine the separated outputs onto the system bus in the original order.
+    // This connects the 7 counter bits and 1 PWM bit to the 8-bit peripheral bus.
     assign uo_out_from_simple_peri[4] = {counter_out_from_sk, pwm_out_from_sk};
 
     tqvp_matt_pwm matt_pwm (
